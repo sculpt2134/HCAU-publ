@@ -1,0 +1,22 @@
+{
+  "name": "my-pjt",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sculpt2134/HCAU-publ.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sculpt2134/HCAU-publ/issues"
+  },
+  "homepage": "https://github.com/sculpt2134/HCAU-publ#readme",
+  "devDependencies": {
+    "gulp": "^4.0.2"
+  }
+}
