@@ -54,15 +54,15 @@ $header-config: (
 // Aside
 $aside-config: (
 	bg-color: (
-		primary: if(isDarkMode(), #1e1e2d, #192440),
+		primary: if(isDarkMode(), #1e1e2d, #00aad2),
 		secondary: if(isDarkMode(), lighten(#1e1e2d, 2%), $white)
 	),
 	width: (
-		desktop: 425px, 
-		tablet-and-mobile: 300px
+		desktop: 325px, 
+		tablet-and-mobile: 200px
 	),
 	primary-width: (
-		desktop: 100px, 
+		desktop: 60px, 
 		tablet-and-mobile: 70px
 	),
 	scrollbar-color: if(isDarkMode(), $gray-200, #3b3b64),
