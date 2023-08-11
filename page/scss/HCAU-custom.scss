@@ -1,35 +1,53 @@
-#wrap{
-    display:flex;
+#wrap {
+    display: flex;
     min-height: 100vh;
-    .HCAU-sidebar{
-        background: #00AAD2;
-        flex:0 0 64px;
+    .HCAU-sidebar {
+        background: blue;
+        flex: 0 0 64px;
     }
-    .HCAU-menubar{
-        flex:1 1 0;
-        background:#fff;
-        
-        .menu{
-            float:right;
-            width:305px;
+    .HCAU-menubar {
+        flex: 1 1 0;
+        // background: #ddd;
+        .menu {
+            float: right;
+            width: 305px;
             min-height: 100vh;
             padding-left: 20px;
-            border-right:1px solid #dedede;
+            // background: red;
         }
     }
-    .HCAU-container{
+    .HCAU-container {
         display: flex;
         flex-direction: column;
-        flex:1 1 700px;
-        .HCAU-contents{
-            width:975px;
-           // border:1px solid;
-            flex:1 0 auto;
+        flex: 1 1 700px;
+        .HCAU-contents {
+            width: 975px;
+            border-left: 1px solid;
+            flex: 1 0 auto;
+            padding-left: 65px;
+            padding-top: 38px;
         }
-        .HCAU-footer{
-            height:80px;
-            background:#333;
-            color:#fff;
+        .HCAU-footer {
+            background: #323232;
+            color: #999;
+            .footer-inner{
+                width: 975px;
+                height: 80px;
+                padding-left: 65px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                .copyright{
+                    font-size: 12px;
+                }
+            }
+
         }
-      }
+    }
+}
+.HCAU-title{
+    .h1{font-size: 2.5rem;}
+}
+.HCAU-detail{
+    padding-top: 2.5rem;
 }
