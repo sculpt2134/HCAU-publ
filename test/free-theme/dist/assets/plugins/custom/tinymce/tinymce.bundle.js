@@ -46270,287 +46270,6 @@ tinymce.IconManager.add('default', {
 
     var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
 
-    var applyListFormat = function (editor, listName, styleValue) {
-      var cmd = listName === 'UL' ? 'InsertUnorderedList' : 'InsertOrderedList';
-      editor.execCommand(cmd, false, styleValue === false ? null : { 'list-style-type': styleValue });
-    };
-
-    var register = function (editor) {
-      editor.addCommand('ApplyUnorderedListStyle', function (ui, value) {
-        applyListFormat(editor, 'UL', value['list-style-type']);
-      });
-      editor.addCommand('ApplyOrderedListStyle', function (ui, value) {
-        applyListFormat(editor, 'OL', value['list-style-type']);
-      });
-    };
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
-
-    var getNumberStyles = function (editor) {
-      var styles = editor.getParam('advlist_number_styles', 'default,lower-alpha,lower-greek,lower-roman,upper-alpha,upper-roman');
-      return styles ? styles.split(/[ ,]/) : [];
-    };
-    var getBulletStyles = function (editor) {
-      var styles = editor.getParam('advlist_bullet_styles', 'default,circle,square');
-      return styles ? styles.split(/[ ,]/) : [];
-    };
-
-    var noop = function () {
-    };
-    var constant = function (value) {
-      return function () {
-        return value;
-      };
-    };
-    var never = constant(false);
-    var always = constant(true);
-
-    var none = function () {
-      return NONE;
-    };
-    var NONE = function () {
-      var eq = function (o) {
-        return o.isNone();
-      };
-      var call = function (thunk) {
-        return thunk();
-      };
-      var id = function (n) {
-        return n;
-      };
-      var me = {
-        fold: function (n, _s) {
-          return n();
-        },
-        is: never,
-        isSome: never,
-        isNone: always,
-        getOr: id,
-        getOrThunk: call,
-        getOrDie: function (msg) {
-          throw new Error(msg || 'error: getOrDie called on none.');
-        },
-        getOrNull: constant(null),
-        getOrUndefined: constant(undefined),
-        or: id,
-        orThunk: call,
-        map: none,
-        each: noop,
-        bind: none,
-        exists: never,
-        forall: always,
-        filter: none,
-        equals: eq,
-        equals_: eq,
-        toArray: function () {
-          return [];
-        },
-        toString: constant('none()')
-      };
-      return me;
-    }();
-    var some = function (a) {
-      var constant_a = constant(a);
-      var self = function () {
-        return me;
-      };
-      var bind = function (f) {
-        return f(a);
-      };
-      var me = {
-        fold: function (n, s) {
-          return s(a);
-        },
-        is: function (v) {
-          return a === v;
-        },
-        isSome: always,
-        isNone: never,
-        getOr: constant_a,
-        getOrThunk: constant_a,
-        getOrDie: constant_a,
-        getOrNull: constant_a,
-        getOrUndefined: constant_a,
-        or: self,
-        orThunk: self,
-        map: function (f) {
-          return some(f(a));
-        },
-        each: function (f) {
-          f(a);
-        },
-        bind: bind,
-        exists: bind,
-        forall: bind,
-        filter: function (f) {
-          return f(a) ? me : NONE;
-        },
-        toArray: function () {
-          return [a];
-        },
-        toString: function () {
-          return 'some(' + a + ')';
-        },
-        equals: function (o) {
-          return o.is(a);
-        },
-        equals_: function (o, elementEq) {
-          return o.fold(never, function (b) {
-            return elementEq(a, b);
-          });
-        }
-      };
-      return me;
-    };
-    var from = function (value) {
-      return value === null || value === undefined ? NONE : some(value);
-    };
-    var Optional = {
-      some: some,
-      none: none,
-      from: from
-    };
-
-    var isChildOfBody = function (editor, elm) {
-      return editor.$.contains(editor.getBody(), elm);
-    };
-    var isTableCellNode = function (node) {
-      return node && /^(TH|TD)$/.test(node.nodeName);
-    };
-    var isListNode = function (editor) {
-      return function (node) {
-        return node && /^(OL|UL|DL)$/.test(node.nodeName) && isChildOfBody(editor, node);
-      };
-    };
-    var getSelectedStyleType = function (editor) {
-      var listElm = editor.dom.getParent(editor.selection.getNode(), 'ol,ul');
-      var style = editor.dom.getStyle(listElm, 'listStyleType');
-      return Optional.from(style);
-    };
-
-    var findIndex = function (list, predicate) {
-      for (var index = 0; index < list.length; index++) {
-        var element = list[index];
-        if (predicate(element)) {
-          return index;
-        }
-      }
-      return -1;
-    };
-    var styleValueToText = function (styleValue) {
-      return styleValue.replace(/\-/g, ' ').replace(/\b\w/g, function (chr) {
-        return chr.toUpperCase();
-      });
-    };
-    var isWithinList = function (editor, e, nodeName) {
-      var tableCellIndex = findIndex(e.parents, isTableCellNode);
-      var parents = tableCellIndex !== -1 ? e.parents.slice(0, tableCellIndex) : e.parents;
-      var lists = global$1.grep(parents, isListNode(editor));
-      return lists.length > 0 && lists[0].nodeName === nodeName;
-    };
-    var addSplitButton = function (editor, id, tooltip, cmd, nodeName, styles) {
-      editor.ui.registry.addSplitButton(id, {
-        tooltip: tooltip,
-        icon: nodeName === 'OL' ? 'ordered-list' : 'unordered-list',
-        presets: 'listpreview',
-        columns: 3,
-        fetch: function (callback) {
-          var items = global$1.map(styles, function (styleValue) {
-            var iconStyle = nodeName === 'OL' ? 'num' : 'bull';
-            var iconName = styleValue === 'disc' || styleValue === 'decimal' ? 'default' : styleValue;
-            var itemValue = styleValue === 'default' ? '' : styleValue;
-            var displayText = styleValueToText(styleValue);
-            return {
-              type: 'choiceitem',
-              value: itemValue,
-              icon: 'list-' + iconStyle + '-' + iconName,
-              text: displayText
-            };
-          });
-          callback(items);
-        },
-        onAction: function () {
-          return editor.execCommand(cmd);
-        },
-        onItemAction: function (_splitButtonApi, value) {
-          applyListFormat(editor, nodeName, value);
-        },
-        select: function (value) {
-          var listStyleType = getSelectedStyleType(editor);
-          return listStyleType.map(function (listStyle) {
-            return value === listStyle;
-          }).getOr(false);
-        },
-        onSetup: function (api) {
-          var nodeChangeHandler = function (e) {
-            api.setActive(isWithinList(editor, e, nodeName));
-          };
-          editor.on('NodeChange', nodeChangeHandler);
-          return function () {
-            return editor.off('NodeChange', nodeChangeHandler);
-          };
-        }
-      });
-    };
-    var addButton = function (editor, id, tooltip, cmd, nodeName, _styles) {
-      editor.ui.registry.addToggleButton(id, {
-        active: false,
-        tooltip: tooltip,
-        icon: nodeName === 'OL' ? 'ordered-list' : 'unordered-list',
-        onSetup: function (api) {
-          var nodeChangeHandler = function (e) {
-            api.setActive(isWithinList(editor, e, nodeName));
-          };
-          editor.on('NodeChange', nodeChangeHandler);
-          return function () {
-            return editor.off('NodeChange', nodeChangeHandler);
-          };
-        },
-        onAction: function () {
-          return editor.execCommand(cmd);
-        }
-      });
-    };
-    var addControl = function (editor, id, tooltip, cmd, nodeName, styles) {
-      if (styles.length > 1) {
-        addSplitButton(editor, id, tooltip, cmd, nodeName, styles);
-      } else {
-        addButton(editor, id, tooltip, cmd, nodeName);
-      }
-    };
-    var register$1 = function (editor) {
-      addControl(editor, 'numlist', 'Numbered list', 'InsertOrderedList', 'OL', getNumberStyles(editor));
-      addControl(editor, 'bullist', 'Bullet list', 'InsertUnorderedList', 'UL', getBulletStyles(editor));
-    };
-
-    function Plugin () {
-      global.add('advlist', function (editor) {
-        if (editor.hasPlugin('lists')) {
-          register$1(editor);
-          register(editor);
-        } else {
-          console.error('Please use the Lists plugin together with the Advanced List plugin.');
-        }
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
     var global$1 = tinymce.util.Tools.resolve('tinymce.dom.RangeUtils');
 
     var global$2 = tinymce.util.Tools.resolve('tinymce.util.Tools');
@@ -46934,6 +46653,287 @@ tinymce.IconManager.add('default', {
     function Plugin () {
       global.add('autolink', function (editor) {
         setup(editor);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var applyListFormat = function (editor, listName, styleValue) {
+      var cmd = listName === 'UL' ? 'InsertUnorderedList' : 'InsertOrderedList';
+      editor.execCommand(cmd, false, styleValue === false ? null : { 'list-style-type': styleValue });
+    };
+
+    var register = function (editor) {
+      editor.addCommand('ApplyUnorderedListStyle', function (ui, value) {
+        applyListFormat(editor, 'UL', value['list-style-type']);
+      });
+      editor.addCommand('ApplyOrderedListStyle', function (ui, value) {
+        applyListFormat(editor, 'OL', value['list-style-type']);
+      });
+    };
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
+
+    var getNumberStyles = function (editor) {
+      var styles = editor.getParam('advlist_number_styles', 'default,lower-alpha,lower-greek,lower-roman,upper-alpha,upper-roman');
+      return styles ? styles.split(/[ ,]/) : [];
+    };
+    var getBulletStyles = function (editor) {
+      var styles = editor.getParam('advlist_bullet_styles', 'default,circle,square');
+      return styles ? styles.split(/[ ,]/) : [];
+    };
+
+    var noop = function () {
+    };
+    var constant = function (value) {
+      return function () {
+        return value;
+      };
+    };
+    var never = constant(false);
+    var always = constant(true);
+
+    var none = function () {
+      return NONE;
+    };
+    var NONE = function () {
+      var eq = function (o) {
+        return o.isNone();
+      };
+      var call = function (thunk) {
+        return thunk();
+      };
+      var id = function (n) {
+        return n;
+      };
+      var me = {
+        fold: function (n, _s) {
+          return n();
+        },
+        is: never,
+        isSome: never,
+        isNone: always,
+        getOr: id,
+        getOrThunk: call,
+        getOrDie: function (msg) {
+          throw new Error(msg || 'error: getOrDie called on none.');
+        },
+        getOrNull: constant(null),
+        getOrUndefined: constant(undefined),
+        or: id,
+        orThunk: call,
+        map: none,
+        each: noop,
+        bind: none,
+        exists: never,
+        forall: always,
+        filter: none,
+        equals: eq,
+        equals_: eq,
+        toArray: function () {
+          return [];
+        },
+        toString: constant('none()')
+      };
+      return me;
+    }();
+    var some = function (a) {
+      var constant_a = constant(a);
+      var self = function () {
+        return me;
+      };
+      var bind = function (f) {
+        return f(a);
+      };
+      var me = {
+        fold: function (n, s) {
+          return s(a);
+        },
+        is: function (v) {
+          return a === v;
+        },
+        isSome: always,
+        isNone: never,
+        getOr: constant_a,
+        getOrThunk: constant_a,
+        getOrDie: constant_a,
+        getOrNull: constant_a,
+        getOrUndefined: constant_a,
+        or: self,
+        orThunk: self,
+        map: function (f) {
+          return some(f(a));
+        },
+        each: function (f) {
+          f(a);
+        },
+        bind: bind,
+        exists: bind,
+        forall: bind,
+        filter: function (f) {
+          return f(a) ? me : NONE;
+        },
+        toArray: function () {
+          return [a];
+        },
+        toString: function () {
+          return 'some(' + a + ')';
+        },
+        equals: function (o) {
+          return o.is(a);
+        },
+        equals_: function (o, elementEq) {
+          return o.fold(never, function (b) {
+            return elementEq(a, b);
+          });
+        }
+      };
+      return me;
+    };
+    var from = function (value) {
+      return value === null || value === undefined ? NONE : some(value);
+    };
+    var Optional = {
+      some: some,
+      none: none,
+      from: from
+    };
+
+    var isChildOfBody = function (editor, elm) {
+      return editor.$.contains(editor.getBody(), elm);
+    };
+    var isTableCellNode = function (node) {
+      return node && /^(TH|TD)$/.test(node.nodeName);
+    };
+    var isListNode = function (editor) {
+      return function (node) {
+        return node && /^(OL|UL|DL)$/.test(node.nodeName) && isChildOfBody(editor, node);
+      };
+    };
+    var getSelectedStyleType = function (editor) {
+      var listElm = editor.dom.getParent(editor.selection.getNode(), 'ol,ul');
+      var style = editor.dom.getStyle(listElm, 'listStyleType');
+      return Optional.from(style);
+    };
+
+    var findIndex = function (list, predicate) {
+      for (var index = 0; index < list.length; index++) {
+        var element = list[index];
+        if (predicate(element)) {
+          return index;
+        }
+      }
+      return -1;
+    };
+    var styleValueToText = function (styleValue) {
+      return styleValue.replace(/\-/g, ' ').replace(/\b\w/g, function (chr) {
+        return chr.toUpperCase();
+      });
+    };
+    var isWithinList = function (editor, e, nodeName) {
+      var tableCellIndex = findIndex(e.parents, isTableCellNode);
+      var parents = tableCellIndex !== -1 ? e.parents.slice(0, tableCellIndex) : e.parents;
+      var lists = global$1.grep(parents, isListNode(editor));
+      return lists.length > 0 && lists[0].nodeName === nodeName;
+    };
+    var addSplitButton = function (editor, id, tooltip, cmd, nodeName, styles) {
+      editor.ui.registry.addSplitButton(id, {
+        tooltip: tooltip,
+        icon: nodeName === 'OL' ? 'ordered-list' : 'unordered-list',
+        presets: 'listpreview',
+        columns: 3,
+        fetch: function (callback) {
+          var items = global$1.map(styles, function (styleValue) {
+            var iconStyle = nodeName === 'OL' ? 'num' : 'bull';
+            var iconName = styleValue === 'disc' || styleValue === 'decimal' ? 'default' : styleValue;
+            var itemValue = styleValue === 'default' ? '' : styleValue;
+            var displayText = styleValueToText(styleValue);
+            return {
+              type: 'choiceitem',
+              value: itemValue,
+              icon: 'list-' + iconStyle + '-' + iconName,
+              text: displayText
+            };
+          });
+          callback(items);
+        },
+        onAction: function () {
+          return editor.execCommand(cmd);
+        },
+        onItemAction: function (_splitButtonApi, value) {
+          applyListFormat(editor, nodeName, value);
+        },
+        select: function (value) {
+          var listStyleType = getSelectedStyleType(editor);
+          return listStyleType.map(function (listStyle) {
+            return value === listStyle;
+          }).getOr(false);
+        },
+        onSetup: function (api) {
+          var nodeChangeHandler = function (e) {
+            api.setActive(isWithinList(editor, e, nodeName));
+          };
+          editor.on('NodeChange', nodeChangeHandler);
+          return function () {
+            return editor.off('NodeChange', nodeChangeHandler);
+          };
+        }
+      });
+    };
+    var addButton = function (editor, id, tooltip, cmd, nodeName, _styles) {
+      editor.ui.registry.addToggleButton(id, {
+        active: false,
+        tooltip: tooltip,
+        icon: nodeName === 'OL' ? 'ordered-list' : 'unordered-list',
+        onSetup: function (api) {
+          var nodeChangeHandler = function (e) {
+            api.setActive(isWithinList(editor, e, nodeName));
+          };
+          editor.on('NodeChange', nodeChangeHandler);
+          return function () {
+            return editor.off('NodeChange', nodeChangeHandler);
+          };
+        },
+        onAction: function () {
+          return editor.execCommand(cmd);
+        }
+      });
+    };
+    var addControl = function (editor, id, tooltip, cmd, nodeName, styles) {
+      if (styles.length > 1) {
+        addSplitButton(editor, id, tooltip, cmd, nodeName, styles);
+      } else {
+        addButton(editor, id, tooltip, cmd, nodeName);
+      }
+    };
+    var register$1 = function (editor) {
+      addControl(editor, 'numlist', 'Numbered list', 'InsertOrderedList', 'OL', getNumberStyles(editor));
+      addControl(editor, 'bullist', 'Bullet list', 'InsertUnorderedList', 'UL', getBulletStyles(editor));
+    };
+
+    function Plugin () {
+      global.add('advlist', function (editor) {
+        if (editor.hasPlugin('lists')) {
+          register$1(editor);
+          register(editor);
+        } else {
+          console.error('Please use the Lists plugin together with the Advanced List plugin.');
+        }
       });
     }
 
@@ -47339,1806 +47339,6 @@ tinymce.IconManager.add('default', {
 
     var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
 
-    var fireInsertCustomChar = function (editor, chr) {
-      return editor.fire('insertCustomChar', { chr: chr });
-    };
-
-    var insertChar = function (editor, chr) {
-      var evtChr = fireInsertCustomChar(editor, chr).chr;
-      editor.execCommand('mceInsertContent', false, evtChr);
-    };
-
-    var typeOf = function (x) {
-      var t = typeof x;
-      if (x === null) {
-        return 'null';
-      } else if (t === 'object' && (Array.prototype.isPrototypeOf(x) || x.constructor && x.constructor.name === 'Array')) {
-        return 'array';
-      } else if (t === 'object' && (String.prototype.isPrototypeOf(x) || x.constructor && x.constructor.name === 'String')) {
-        return 'string';
-      } else {
-        return t;
-      }
-    };
-    var isType = function (type) {
-      return function (value) {
-        return typeOf(value) === type;
-      };
-    };
-    var isArray = isType('array');
-
-    var noop = function () {
-    };
-    var constant = function (value) {
-      return function () {
-        return value;
-      };
-    };
-    var never = constant(false);
-    var always = constant(true);
-
-    var none = function () {
-      return NONE;
-    };
-    var NONE = function () {
-      var eq = function (o) {
-        return o.isNone();
-      };
-      var call = function (thunk) {
-        return thunk();
-      };
-      var id = function (n) {
-        return n;
-      };
-      var me = {
-        fold: function (n, _s) {
-          return n();
-        },
-        is: never,
-        isSome: never,
-        isNone: always,
-        getOr: id,
-        getOrThunk: call,
-        getOrDie: function (msg) {
-          throw new Error(msg || 'error: getOrDie called on none.');
-        },
-        getOrNull: constant(null),
-        getOrUndefined: constant(undefined),
-        or: id,
-        orThunk: call,
-        map: none,
-        each: noop,
-        bind: none,
-        exists: never,
-        forall: always,
-        filter: none,
-        equals: eq,
-        equals_: eq,
-        toArray: function () {
-          return [];
-        },
-        toString: constant('none()')
-      };
-      return me;
-    }();
-    var some = function (a) {
-      var constant_a = constant(a);
-      var self = function () {
-        return me;
-      };
-      var bind = function (f) {
-        return f(a);
-      };
-      var me = {
-        fold: function (n, s) {
-          return s(a);
-        },
-        is: function (v) {
-          return a === v;
-        },
-        isSome: always,
-        isNone: never,
-        getOr: constant_a,
-        getOrThunk: constant_a,
-        getOrDie: constant_a,
-        getOrNull: constant_a,
-        getOrUndefined: constant_a,
-        or: self,
-        orThunk: self,
-        map: function (f) {
-          return some(f(a));
-        },
-        each: function (f) {
-          f(a);
-        },
-        bind: bind,
-        exists: bind,
-        forall: bind,
-        filter: function (f) {
-          return f(a) ? me : NONE;
-        },
-        toArray: function () {
-          return [a];
-        },
-        toString: function () {
-          return 'some(' + a + ')';
-        },
-        equals: function (o) {
-          return o.is(a);
-        },
-        equals_: function (o, elementEq) {
-          return o.fold(never, function (b) {
-            return elementEq(a, b);
-          });
-        }
-      };
-      return me;
-    };
-    var from = function (value) {
-      return value === null || value === undefined ? NONE : some(value);
-    };
-    var Optional = {
-      some: some,
-      none: none,
-      from: from
-    };
-
-    var nativePush = Array.prototype.push;
-    var map = function (xs, f) {
-      var len = xs.length;
-      var r = new Array(len);
-      for (var i = 0; i < len; i++) {
-        var x = xs[i];
-        r[i] = f(x, i);
-      }
-      return r;
-    };
-    var each = function (xs, f) {
-      for (var i = 0, len = xs.length; i < len; i++) {
-        var x = xs[i];
-        f(x, i);
-      }
-    };
-    var findUntil = function (xs, pred, until) {
-      for (var i = 0, len = xs.length; i < len; i++) {
-        var x = xs[i];
-        if (pred(x, i)) {
-          return Optional.some(x);
-        } else if (until(x, i)) {
-          break;
-        }
-      }
-      return Optional.none();
-    };
-    var find = function (xs, pred) {
-      return findUntil(xs, pred, never);
-    };
-    var flatten = function (xs) {
-      var r = [];
-      for (var i = 0, len = xs.length; i < len; ++i) {
-        if (!isArray(xs[i])) {
-          throw new Error('Arr.flatten item ' + i + ' was not an array, input: ' + xs);
-        }
-        nativePush.apply(r, xs[i]);
-      }
-      return r;
-    };
-    var bind = function (xs, f) {
-      return flatten(map(xs, f));
-    };
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
-
-    var getCharMap = function (editor) {
-      return editor.getParam('charmap');
-    };
-    var getCharMapAppend = function (editor) {
-      return editor.getParam('charmap_append');
-    };
-
-    var isArray$1 = global$1.isArray;
-    var UserDefined = 'User Defined';
-    var getDefaultCharMap = function () {
-      return [
-        {
-          name: 'Currency',
-          characters: [
-            [
-              36,
-              'dollar sign'
-            ],
-            [
-              162,
-              'cent sign'
-            ],
-            [
-              8364,
-              'euro sign'
-            ],
-            [
-              163,
-              'pound sign'
-            ],
-            [
-              165,
-              'yen sign'
-            ],
-            [
-              164,
-              'currency sign'
-            ],
-            [
-              8352,
-              'euro-currency sign'
-            ],
-            [
-              8353,
-              'colon sign'
-            ],
-            [
-              8354,
-              'cruzeiro sign'
-            ],
-            [
-              8355,
-              'french franc sign'
-            ],
-            [
-              8356,
-              'lira sign'
-            ],
-            [
-              8357,
-              'mill sign'
-            ],
-            [
-              8358,
-              'naira sign'
-            ],
-            [
-              8359,
-              'peseta sign'
-            ],
-            [
-              8360,
-              'rupee sign'
-            ],
-            [
-              8361,
-              'won sign'
-            ],
-            [
-              8362,
-              'new sheqel sign'
-            ],
-            [
-              8363,
-              'dong sign'
-            ],
-            [
-              8365,
-              'kip sign'
-            ],
-            [
-              8366,
-              'tugrik sign'
-            ],
-            [
-              8367,
-              'drachma sign'
-            ],
-            [
-              8368,
-              'german penny symbol'
-            ],
-            [
-              8369,
-              'peso sign'
-            ],
-            [
-              8370,
-              'guarani sign'
-            ],
-            [
-              8371,
-              'austral sign'
-            ],
-            [
-              8372,
-              'hryvnia sign'
-            ],
-            [
-              8373,
-              'cedi sign'
-            ],
-            [
-              8374,
-              'livre tournois sign'
-            ],
-            [
-              8375,
-              'spesmilo sign'
-            ],
-            [
-              8376,
-              'tenge sign'
-            ],
-            [
-              8377,
-              'indian rupee sign'
-            ],
-            [
-              8378,
-              'turkish lira sign'
-            ],
-            [
-              8379,
-              'nordic mark sign'
-            ],
-            [
-              8380,
-              'manat sign'
-            ],
-            [
-              8381,
-              'ruble sign'
-            ],
-            [
-              20870,
-              'yen character'
-            ],
-            [
-              20803,
-              'yuan character'
-            ],
-            [
-              22291,
-              'yuan character, in hong kong and taiwan'
-            ],
-            [
-              22278,
-              'yen/yuan character variant one'
-            ]
-          ]
-        },
-        {
-          name: 'Text',
-          characters: [
-            [
-              169,
-              'copyright sign'
-            ],
-            [
-              174,
-              'registered sign'
-            ],
-            [
-              8482,
-              'trade mark sign'
-            ],
-            [
-              8240,
-              'per mille sign'
-            ],
-            [
-              181,
-              'micro sign'
-            ],
-            [
-              183,
-              'middle dot'
-            ],
-            [
-              8226,
-              'bullet'
-            ],
-            [
-              8230,
-              'three dot leader'
-            ],
-            [
-              8242,
-              'minutes / feet'
-            ],
-            [
-              8243,
-              'seconds / inches'
-            ],
-            [
-              167,
-              'section sign'
-            ],
-            [
-              182,
-              'paragraph sign'
-            ],
-            [
-              223,
-              'sharp s / ess-zed'
-            ]
-          ]
-        },
-        {
-          name: 'Quotations',
-          characters: [
-            [
-              8249,
-              'single left-pointing angle quotation mark'
-            ],
-            [
-              8250,
-              'single right-pointing angle quotation mark'
-            ],
-            [
-              171,
-              'left pointing guillemet'
-            ],
-            [
-              187,
-              'right pointing guillemet'
-            ],
-            [
-              8216,
-              'left single quotation mark'
-            ],
-            [
-              8217,
-              'right single quotation mark'
-            ],
-            [
-              8220,
-              'left double quotation mark'
-            ],
-            [
-              8221,
-              'right double quotation mark'
-            ],
-            [
-              8218,
-              'single low-9 quotation mark'
-            ],
-            [
-              8222,
-              'double low-9 quotation mark'
-            ],
-            [
-              60,
-              'less-than sign'
-            ],
-            [
-              62,
-              'greater-than sign'
-            ],
-            [
-              8804,
-              'less-than or equal to'
-            ],
-            [
-              8805,
-              'greater-than or equal to'
-            ],
-            [
-              8211,
-              'en dash'
-            ],
-            [
-              8212,
-              'em dash'
-            ],
-            [
-              175,
-              'macron'
-            ],
-            [
-              8254,
-              'overline'
-            ],
-            [
-              164,
-              'currency sign'
-            ],
-            [
-              166,
-              'broken bar'
-            ],
-            [
-              168,
-              'diaeresis'
-            ],
-            [
-              161,
-              'inverted exclamation mark'
-            ],
-            [
-              191,
-              'turned question mark'
-            ],
-            [
-              710,
-              'circumflex accent'
-            ],
-            [
-              732,
-              'small tilde'
-            ],
-            [
-              176,
-              'degree sign'
-            ],
-            [
-              8722,
-              'minus sign'
-            ],
-            [
-              177,
-              'plus-minus sign'
-            ],
-            [
-              247,
-              'division sign'
-            ],
-            [
-              8260,
-              'fraction slash'
-            ],
-            [
-              215,
-              'multiplication sign'
-            ],
-            [
-              185,
-              'superscript one'
-            ],
-            [
-              178,
-              'superscript two'
-            ],
-            [
-              179,
-              'superscript three'
-            ],
-            [
-              188,
-              'fraction one quarter'
-            ],
-            [
-              189,
-              'fraction one half'
-            ],
-            [
-              190,
-              'fraction three quarters'
-            ]
-          ]
-        },
-        {
-          name: 'Mathematical',
-          characters: [
-            [
-              402,
-              'function / florin'
-            ],
-            [
-              8747,
-              'integral'
-            ],
-            [
-              8721,
-              'n-ary sumation'
-            ],
-            [
-              8734,
-              'infinity'
-            ],
-            [
-              8730,
-              'square root'
-            ],
-            [
-              8764,
-              'similar to'
-            ],
-            [
-              8773,
-              'approximately equal to'
-            ],
-            [
-              8776,
-              'almost equal to'
-            ],
-            [
-              8800,
-              'not equal to'
-            ],
-            [
-              8801,
-              'identical to'
-            ],
-            [
-              8712,
-              'element of'
-            ],
-            [
-              8713,
-              'not an element of'
-            ],
-            [
-              8715,
-              'contains as member'
-            ],
-            [
-              8719,
-              'n-ary product'
-            ],
-            [
-              8743,
-              'logical and'
-            ],
-            [
-              8744,
-              'logical or'
-            ],
-            [
-              172,
-              'not sign'
-            ],
-            [
-              8745,
-              'intersection'
-            ],
-            [
-              8746,
-              'union'
-            ],
-            [
-              8706,
-              'partial differential'
-            ],
-            [
-              8704,
-              'for all'
-            ],
-            [
-              8707,
-              'there exists'
-            ],
-            [
-              8709,
-              'diameter'
-            ],
-            [
-              8711,
-              'backward difference'
-            ],
-            [
-              8727,
-              'asterisk operator'
-            ],
-            [
-              8733,
-              'proportional to'
-            ],
-            [
-              8736,
-              'angle'
-            ]
-          ]
-        },
-        {
-          name: 'Extended Latin',
-          characters: [
-            [
-              192,
-              'A - grave'
-            ],
-            [
-              193,
-              'A - acute'
-            ],
-            [
-              194,
-              'A - circumflex'
-            ],
-            [
-              195,
-              'A - tilde'
-            ],
-            [
-              196,
-              'A - diaeresis'
-            ],
-            [
-              197,
-              'A - ring above'
-            ],
-            [
-              256,
-              'A - macron'
-            ],
-            [
-              198,
-              'ligature AE'
-            ],
-            [
-              199,
-              'C - cedilla'
-            ],
-            [
-              200,
-              'E - grave'
-            ],
-            [
-              201,
-              'E - acute'
-            ],
-            [
-              202,
-              'E - circumflex'
-            ],
-            [
-              203,
-              'E - diaeresis'
-            ],
-            [
-              274,
-              'E - macron'
-            ],
-            [
-              204,
-              'I - grave'
-            ],
-            [
-              205,
-              'I - acute'
-            ],
-            [
-              206,
-              'I - circumflex'
-            ],
-            [
-              207,
-              'I - diaeresis'
-            ],
-            [
-              298,
-              'I - macron'
-            ],
-            [
-              208,
-              'ETH'
-            ],
-            [
-              209,
-              'N - tilde'
-            ],
-            [
-              210,
-              'O - grave'
-            ],
-            [
-              211,
-              'O - acute'
-            ],
-            [
-              212,
-              'O - circumflex'
-            ],
-            [
-              213,
-              'O - tilde'
-            ],
-            [
-              214,
-              'O - diaeresis'
-            ],
-            [
-              216,
-              'O - slash'
-            ],
-            [
-              332,
-              'O - macron'
-            ],
-            [
-              338,
-              'ligature OE'
-            ],
-            [
-              352,
-              'S - caron'
-            ],
-            [
-              217,
-              'U - grave'
-            ],
-            [
-              218,
-              'U - acute'
-            ],
-            [
-              219,
-              'U - circumflex'
-            ],
-            [
-              220,
-              'U - diaeresis'
-            ],
-            [
-              362,
-              'U - macron'
-            ],
-            [
-              221,
-              'Y - acute'
-            ],
-            [
-              376,
-              'Y - diaeresis'
-            ],
-            [
-              562,
-              'Y - macron'
-            ],
-            [
-              222,
-              'THORN'
-            ],
-            [
-              224,
-              'a - grave'
-            ],
-            [
-              225,
-              'a - acute'
-            ],
-            [
-              226,
-              'a - circumflex'
-            ],
-            [
-              227,
-              'a - tilde'
-            ],
-            [
-              228,
-              'a - diaeresis'
-            ],
-            [
-              229,
-              'a - ring above'
-            ],
-            [
-              257,
-              'a - macron'
-            ],
-            [
-              230,
-              'ligature ae'
-            ],
-            [
-              231,
-              'c - cedilla'
-            ],
-            [
-              232,
-              'e - grave'
-            ],
-            [
-              233,
-              'e - acute'
-            ],
-            [
-              234,
-              'e - circumflex'
-            ],
-            [
-              235,
-              'e - diaeresis'
-            ],
-            [
-              275,
-              'e - macron'
-            ],
-            [
-              236,
-              'i - grave'
-            ],
-            [
-              237,
-              'i - acute'
-            ],
-            [
-              238,
-              'i - circumflex'
-            ],
-            [
-              239,
-              'i - diaeresis'
-            ],
-            [
-              299,
-              'i - macron'
-            ],
-            [
-              240,
-              'eth'
-            ],
-            [
-              241,
-              'n - tilde'
-            ],
-            [
-              242,
-              'o - grave'
-            ],
-            [
-              243,
-              'o - acute'
-            ],
-            [
-              244,
-              'o - circumflex'
-            ],
-            [
-              245,
-              'o - tilde'
-            ],
-            [
-              246,
-              'o - diaeresis'
-            ],
-            [
-              248,
-              'o slash'
-            ],
-            [
-              333,
-              'o macron'
-            ],
-            [
-              339,
-              'ligature oe'
-            ],
-            [
-              353,
-              's - caron'
-            ],
-            [
-              249,
-              'u - grave'
-            ],
-            [
-              250,
-              'u - acute'
-            ],
-            [
-              251,
-              'u - circumflex'
-            ],
-            [
-              252,
-              'u - diaeresis'
-            ],
-            [
-              363,
-              'u - macron'
-            ],
-            [
-              253,
-              'y - acute'
-            ],
-            [
-              254,
-              'thorn'
-            ],
-            [
-              255,
-              'y - diaeresis'
-            ],
-            [
-              563,
-              'y - macron'
-            ],
-            [
-              913,
-              'Alpha'
-            ],
-            [
-              914,
-              'Beta'
-            ],
-            [
-              915,
-              'Gamma'
-            ],
-            [
-              916,
-              'Delta'
-            ],
-            [
-              917,
-              'Epsilon'
-            ],
-            [
-              918,
-              'Zeta'
-            ],
-            [
-              919,
-              'Eta'
-            ],
-            [
-              920,
-              'Theta'
-            ],
-            [
-              921,
-              'Iota'
-            ],
-            [
-              922,
-              'Kappa'
-            ],
-            [
-              923,
-              'Lambda'
-            ],
-            [
-              924,
-              'Mu'
-            ],
-            [
-              925,
-              'Nu'
-            ],
-            [
-              926,
-              'Xi'
-            ],
-            [
-              927,
-              'Omicron'
-            ],
-            [
-              928,
-              'Pi'
-            ],
-            [
-              929,
-              'Rho'
-            ],
-            [
-              931,
-              'Sigma'
-            ],
-            [
-              932,
-              'Tau'
-            ],
-            [
-              933,
-              'Upsilon'
-            ],
-            [
-              934,
-              'Phi'
-            ],
-            [
-              935,
-              'Chi'
-            ],
-            [
-              936,
-              'Psi'
-            ],
-            [
-              937,
-              'Omega'
-            ],
-            [
-              945,
-              'alpha'
-            ],
-            [
-              946,
-              'beta'
-            ],
-            [
-              947,
-              'gamma'
-            ],
-            [
-              948,
-              'delta'
-            ],
-            [
-              949,
-              'epsilon'
-            ],
-            [
-              950,
-              'zeta'
-            ],
-            [
-              951,
-              'eta'
-            ],
-            [
-              952,
-              'theta'
-            ],
-            [
-              953,
-              'iota'
-            ],
-            [
-              954,
-              'kappa'
-            ],
-            [
-              955,
-              'lambda'
-            ],
-            [
-              956,
-              'mu'
-            ],
-            [
-              957,
-              'nu'
-            ],
-            [
-              958,
-              'xi'
-            ],
-            [
-              959,
-              'omicron'
-            ],
-            [
-              960,
-              'pi'
-            ],
-            [
-              961,
-              'rho'
-            ],
-            [
-              962,
-              'final sigma'
-            ],
-            [
-              963,
-              'sigma'
-            ],
-            [
-              964,
-              'tau'
-            ],
-            [
-              965,
-              'upsilon'
-            ],
-            [
-              966,
-              'phi'
-            ],
-            [
-              967,
-              'chi'
-            ],
-            [
-              968,
-              'psi'
-            ],
-            [
-              969,
-              'omega'
-            ]
-          ]
-        },
-        {
-          name: 'Symbols',
-          characters: [
-            [
-              8501,
-              'alef symbol'
-            ],
-            [
-              982,
-              'pi symbol'
-            ],
-            [
-              8476,
-              'real part symbol'
-            ],
-            [
-              978,
-              'upsilon - hook symbol'
-            ],
-            [
-              8472,
-              'Weierstrass p'
-            ],
-            [
-              8465,
-              'imaginary part'
-            ]
-          ]
-        },
-        {
-          name: 'Arrows',
-          characters: [
-            [
-              8592,
-              'leftwards arrow'
-            ],
-            [
-              8593,
-              'upwards arrow'
-            ],
-            [
-              8594,
-              'rightwards arrow'
-            ],
-            [
-              8595,
-              'downwards arrow'
-            ],
-            [
-              8596,
-              'left right arrow'
-            ],
-            [
-              8629,
-              'carriage return'
-            ],
-            [
-              8656,
-              'leftwards double arrow'
-            ],
-            [
-              8657,
-              'upwards double arrow'
-            ],
-            [
-              8658,
-              'rightwards double arrow'
-            ],
-            [
-              8659,
-              'downwards double arrow'
-            ],
-            [
-              8660,
-              'left right double arrow'
-            ],
-            [
-              8756,
-              'therefore'
-            ],
-            [
-              8834,
-              'subset of'
-            ],
-            [
-              8835,
-              'superset of'
-            ],
-            [
-              8836,
-              'not a subset of'
-            ],
-            [
-              8838,
-              'subset of or equal to'
-            ],
-            [
-              8839,
-              'superset of or equal to'
-            ],
-            [
-              8853,
-              'circled plus'
-            ],
-            [
-              8855,
-              'circled times'
-            ],
-            [
-              8869,
-              'perpendicular'
-            ],
-            [
-              8901,
-              'dot operator'
-            ],
-            [
-              8968,
-              'left ceiling'
-            ],
-            [
-              8969,
-              'right ceiling'
-            ],
-            [
-              8970,
-              'left floor'
-            ],
-            [
-              8971,
-              'right floor'
-            ],
-            [
-              9001,
-              'left-pointing angle bracket'
-            ],
-            [
-              9002,
-              'right-pointing angle bracket'
-            ],
-            [
-              9674,
-              'lozenge'
-            ],
-            [
-              9824,
-              'black spade suit'
-            ],
-            [
-              9827,
-              'black club suit'
-            ],
-            [
-              9829,
-              'black heart suit'
-            ],
-            [
-              9830,
-              'black diamond suit'
-            ],
-            [
-              8194,
-              'en space'
-            ],
-            [
-              8195,
-              'em space'
-            ],
-            [
-              8201,
-              'thin space'
-            ],
-            [
-              8204,
-              'zero width non-joiner'
-            ],
-            [
-              8205,
-              'zero width joiner'
-            ],
-            [
-              8206,
-              'left-to-right mark'
-            ],
-            [
-              8207,
-              'right-to-left mark'
-            ]
-          ]
-        }
-      ];
-    };
-    var charmapFilter = function (charmap) {
-      return global$1.grep(charmap, function (item) {
-        return isArray$1(item) && item.length === 2;
-      });
-    };
-    var getCharsFromSetting = function (settingValue) {
-      if (isArray$1(settingValue)) {
-        return [].concat(charmapFilter(settingValue));
-      }
-      if (typeof settingValue === 'function') {
-        return settingValue();
-      }
-      return [];
-    };
-    var extendCharMap = function (editor, charmap) {
-      var userCharMap = getCharMap(editor);
-      if (userCharMap) {
-        charmap = [{
-            name: UserDefined,
-            characters: getCharsFromSetting(userCharMap)
-          }];
-      }
-      var userCharMapAppend = getCharMapAppend(editor);
-      if (userCharMapAppend) {
-        var userDefinedGroup = global$1.grep(charmap, function (cg) {
-          return cg.name === UserDefined;
-        });
-        if (userDefinedGroup.length) {
-          userDefinedGroup[0].characters = [].concat(userDefinedGroup[0].characters).concat(getCharsFromSetting(userCharMapAppend));
-          return charmap;
-        }
-        return [].concat(charmap).concat({
-          name: UserDefined,
-          characters: getCharsFromSetting(userCharMapAppend)
-        });
-      }
-      return charmap;
-    };
-    var getCharMap$1 = function (editor) {
-      var groups = extendCharMap(editor, getDefaultCharMap());
-      return groups.length > 1 ? [{
-          name: 'All',
-          characters: bind(groups, function (g) {
-            return g.characters;
-          })
-        }].concat(groups) : groups;
-    };
-
-    var get = function (editor) {
-      var getCharMap = function () {
-        return getCharMap$1(editor);
-      };
-      var insertChar$1 = function (chr) {
-        insertChar(editor, chr);
-      };
-      return {
-        getCharMap: getCharMap,
-        insertChar: insertChar$1
-      };
-    };
-
-    var Cell = function (initial) {
-      var value = initial;
-      var get = function () {
-        return value;
-      };
-      var set = function (v) {
-        value = v;
-      };
-      return {
-        get: get,
-        set: set
-      };
-    };
-
-    var last = function (fn, rate) {
-      var timer = null;
-      var cancel = function () {
-        if (timer !== null) {
-          clearTimeout(timer);
-          timer = null;
-        }
-      };
-      var throttle = function () {
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-          args[_i] = arguments[_i];
-        }
-        if (timer !== null) {
-          clearTimeout(timer);
-        }
-        timer = setTimeout(function () {
-          fn.apply(null, args);
-          timer = null;
-        }, rate);
-      };
-      return {
-        cancel: cancel,
-        throttle: throttle
-      };
-    };
-
-    var nativeFromCodePoint = String.fromCodePoint;
-    var contains = function (str, substr) {
-      return str.indexOf(substr) !== -1;
-    };
-    var fromCodePoint = function () {
-      var codePoints = [];
-      for (var _i = 0; _i < arguments.length; _i++) {
-        codePoints[_i] = arguments[_i];
-      }
-      if (nativeFromCodePoint) {
-        return nativeFromCodePoint.apply(void 0, codePoints);
-      } else {
-        var codeUnits = [];
-        var codeLen = 0;
-        var result = '';
-        for (var index = 0, len = codePoints.length; index !== len; ++index) {
-          var codePoint = +codePoints[index];
-          if (!(codePoint < 1114111 && codePoint >>> 0 === codePoint)) {
-            throw RangeError('Invalid code point: ' + codePoint);
-          }
-          if (codePoint <= 65535) {
-            codeLen = codeUnits.push(codePoint);
-          } else {
-            codePoint -= 65536;
-            codeLen = codeUnits.push((codePoint >> 10) + 55296, codePoint % 1024 + 56320);
-          }
-          if (codeLen >= 16383) {
-            result += String.fromCharCode.apply(null, codeUnits);
-            codeUnits.length = 0;
-          }
-        }
-        return result + String.fromCharCode.apply(null, codeUnits);
-      }
-    };
-
-    var charMatches = function (charCode, name, lowerCasePattern) {
-      if (contains(fromCodePoint(charCode).toLowerCase(), lowerCasePattern)) {
-        return true;
-      } else {
-        return contains(name.toLowerCase(), lowerCasePattern) || contains(name.toLowerCase().replace(/\s+/g, ''), lowerCasePattern);
-      }
-    };
-    var scan = function (group, pattern) {
-      var matches = [];
-      var lowerCasePattern = pattern.toLowerCase();
-      each(group.characters, function (g) {
-        if (charMatches(g[0], g[1], lowerCasePattern)) {
-          matches.push(g);
-        }
-      });
-      return map(matches, function (m) {
-        return {
-          text: m[1],
-          value: fromCodePoint(m[0]),
-          icon: fromCodePoint(m[0])
-        };
-      });
-    };
-
-    var patternName = 'pattern';
-    var open = function (editor, charMap) {
-      var makeGroupItems = function () {
-        return [
-          {
-            label: 'Search',
-            type: 'input',
-            name: patternName
-          },
-          {
-            type: 'collection',
-            name: 'results'
-          }
-        ];
-      };
-      var makeTabs = function () {
-        return map(charMap, function (charGroup) {
-          return {
-            title: charGroup.name,
-            name: charGroup.name,
-            items: makeGroupItems()
-          };
-        });
-      };
-      var makePanel = function () {
-        return {
-          type: 'panel',
-          items: makeGroupItems()
-        };
-      };
-      var makeTabPanel = function () {
-        return {
-          type: 'tabpanel',
-          tabs: makeTabs()
-        };
-      };
-      var currentTab = charMap.length === 1 ? Cell(UserDefined) : Cell('All');
-      var scanAndSet = function (dialogApi, pattern) {
-        find(charMap, function (group) {
-          return group.name === currentTab.get();
-        }).each(function (f) {
-          var items = scan(f, pattern);
-          dialogApi.setData({ results: items });
-        });
-      };
-      var SEARCH_DELAY = 40;
-      var updateFilter = last(function (dialogApi) {
-        var pattern = dialogApi.getData().pattern;
-        scanAndSet(dialogApi, pattern);
-      }, SEARCH_DELAY);
-      var body = charMap.length === 1 ? makePanel() : makeTabPanel();
-      var initialData = {
-        pattern: '',
-        results: scan(charMap[0], '')
-      };
-      var bridgeSpec = {
-        title: 'Special Character',
-        size: 'normal',
-        body: body,
-        buttons: [{
-            type: 'cancel',
-            name: 'close',
-            text: 'Close',
-            primary: true
-          }],
-        initialData: initialData,
-        onAction: function (api, details) {
-          if (details.name === 'results') {
-            insertChar(editor, details.value);
-            api.close();
-          }
-        },
-        onTabChange: function (dialogApi, details) {
-          currentTab.set(details.newTabName);
-          updateFilter.throttle(dialogApi);
-        },
-        onChange: function (dialogApi, changeData) {
-          if (changeData.name === patternName) {
-            updateFilter.throttle(dialogApi);
-          }
-        }
-      };
-      var dialogApi = editor.windowManager.open(bridgeSpec);
-      dialogApi.focus(patternName);
-    };
-
-    var register = function (editor, charMap) {
-      editor.addCommand('mceShowCharmap', function () {
-        open(editor, charMap);
-      });
-    };
-
-    var global$2 = tinymce.util.Tools.resolve('tinymce.util.Promise');
-
-    var init = function (editor, all) {
-      editor.ui.registry.addAutocompleter('charmap', {
-        ch: ':',
-        columns: 'auto',
-        minChars: 2,
-        fetch: function (pattern, _maxResults) {
-          return new global$2(function (resolve, _reject) {
-            resolve(scan(all, pattern));
-          });
-        },
-        onAction: function (autocompleteApi, rng, value) {
-          editor.selection.setRng(rng);
-          editor.insertContent(value);
-          autocompleteApi.hide();
-        }
-      });
-    };
-
-    var register$1 = function (editor) {
-      editor.ui.registry.addButton('charmap', {
-        icon: 'insert-character',
-        tooltip: 'Special character',
-        onAction: function () {
-          return editor.execCommand('mceShowCharmap');
-        }
-      });
-      editor.ui.registry.addMenuItem('charmap', {
-        icon: 'insert-character',
-        text: 'Special character...',
-        onAction: function () {
-          return editor.execCommand('mceShowCharmap');
-        }
-      });
-    };
-
-    function Plugin () {
-      global.add('charmap', function (editor) {
-        var charMap = getCharMap$1(editor);
-        register(editor, charMap);
-        register$1(editor);
-        init(editor, charMap[0]);
-        return get(editor);
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var setContent = function (editor, html) {
-      editor.focus();
-      editor.undoManager.transact(function () {
-        editor.setContent(html);
-      });
-      editor.selection.setCursorLocation();
-      editor.nodeChanged();
-    };
-    var getContent = function (editor) {
-      return editor.getContent({ source_view: true });
-    };
-
-    var open = function (editor) {
-      var editorContent = getContent(editor);
-      editor.windowManager.open({
-        title: 'Source Code',
-        size: 'large',
-        body: {
-          type: 'panel',
-          items: [{
-              type: 'textarea',
-              name: 'code'
-            }]
-        },
-        buttons: [
-          {
-            type: 'cancel',
-            name: 'cancel',
-            text: 'Cancel'
-          },
-          {
-            type: 'submit',
-            name: 'save',
-            text: 'Save',
-            primary: true
-          }
-        ],
-        initialData: { code: editorContent },
-        onSubmit: function (api) {
-          setContent(editor, api.getData().code);
-          api.close();
-        }
-      });
-    };
-
-    var register = function (editor) {
-      editor.addCommand('mceCodeEditor', function () {
-        open(editor);
-      });
-    };
-
-    var register$1 = function (editor) {
-      editor.ui.registry.addButton('code', {
-        icon: 'sourcecode',
-        tooltip: 'Source code',
-        onAction: function () {
-          return open(editor);
-        }
-      });
-      editor.ui.registry.addMenuItem('code', {
-        icon: 'sourcecode',
-        text: 'Source code',
-        onAction: function () {
-          return open(editor);
-        }
-      });
-    };
-
-    function Plugin () {
-      global.add('code', function (editor) {
-        register(editor);
-        register$1(editor);
-        return {};
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
     var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
 
     var html2bbcode = function (s) {
@@ -49239,330 +47439,79 @@ tinymce.IconManager.add('default', {
 
     var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
 
-    function Plugin () {
-      global.add('colorpicker', function () {
-        console.warn('Color picker plugin is now built in to the core editor, please remove it from your editor configuration');
+    var setContent = function (editor, html) {
+      editor.focus();
+      editor.undoManager.transact(function () {
+        editor.setContent(html);
       });
-    }
+      editor.selection.setCursorLocation();
+      editor.nodeChanged();
+    };
+    var getContent = function (editor) {
+      return editor.getContent({ source_view: true });
+    };
 
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
-
-    var setDir = function (editor, dir) {
-      var dom = editor.dom;
-      var curDir;
-      var blocks = editor.selection.getSelectedBlocks();
-      if (blocks.length) {
-        curDir = dom.getAttrib(blocks[0], 'dir');
-        global$1.each(blocks, function (block) {
-          if (!dom.getParent(block.parentNode, '*[dir="' + dir + '"]', dom.getRoot())) {
-            dom.setAttrib(block, 'dir', curDir !== dir ? dir : null);
+    var open = function (editor) {
+      var editorContent = getContent(editor);
+      editor.windowManager.open({
+        title: 'Source Code',
+        size: 'large',
+        body: {
+          type: 'panel',
+          items: [{
+              type: 'textarea',
+              name: 'code'
+            }]
+        },
+        buttons: [
+          {
+            type: 'cancel',
+            name: 'cancel',
+            text: 'Cancel'
+          },
+          {
+            type: 'submit',
+            name: 'save',
+            text: 'Save',
+            primary: true
           }
-        });
-        editor.nodeChanged();
-      }
+        ],
+        initialData: { code: editorContent },
+        onSubmit: function (api) {
+          setContent(editor, api.getData().code);
+          api.close();
+        }
+      });
     };
 
     var register = function (editor) {
-      editor.addCommand('mceDirectionLTR', function () {
-        setDir(editor, 'ltr');
-      });
-      editor.addCommand('mceDirectionRTL', function () {
-        setDir(editor, 'rtl');
+      editor.addCommand('mceCodeEditor', function () {
+        open(editor);
       });
     };
 
-    var isSimpleType = function (type) {
-      return function (value) {
-        return typeof value === type;
-      };
-    };
-    var isNullable = function (a) {
-      return a === null || a === undefined;
-    };
-    var isNonNullable = function (a) {
-      return !isNullable(a);
-    };
-    var isFunction = isSimpleType('function');
-
-    var noop = function () {
-    };
-    var compose1 = function (fbc, fab) {
-      return function (a) {
-        return fbc(fab(a));
-      };
-    };
-    var constant = function (value) {
-      return function () {
-        return value;
-      };
-    };
-    var never = constant(false);
-    var always = constant(true);
-
-    var none = function () {
-      return NONE;
-    };
-    var NONE = function () {
-      var eq = function (o) {
-        return o.isNone();
-      };
-      var call = function (thunk) {
-        return thunk();
-      };
-      var id = function (n) {
-        return n;
-      };
-      var me = {
-        fold: function (n, _s) {
-          return n();
-        },
-        is: never,
-        isSome: never,
-        isNone: always,
-        getOr: id,
-        getOrThunk: call,
-        getOrDie: function (msg) {
-          throw new Error(msg || 'error: getOrDie called on none.');
-        },
-        getOrNull: constant(null),
-        getOrUndefined: constant(undefined),
-        or: id,
-        orThunk: call,
-        map: none,
-        each: noop,
-        bind: none,
-        exists: never,
-        forall: always,
-        filter: none,
-        equals: eq,
-        equals_: eq,
-        toArray: function () {
-          return [];
-        },
-        toString: constant('none()')
-      };
-      return me;
-    }();
-    var some = function (a) {
-      var constant_a = constant(a);
-      var self = function () {
-        return me;
-      };
-      var bind = function (f) {
-        return f(a);
-      };
-      var me = {
-        fold: function (n, s) {
-          return s(a);
-        },
-        is: function (v) {
-          return a === v;
-        },
-        isSome: always,
-        isNone: never,
-        getOr: constant_a,
-        getOrThunk: constant_a,
-        getOrDie: constant_a,
-        getOrNull: constant_a,
-        getOrUndefined: constant_a,
-        or: self,
-        orThunk: self,
-        map: function (f) {
-          return some(f(a));
-        },
-        each: function (f) {
-          f(a);
-        },
-        bind: bind,
-        exists: bind,
-        forall: bind,
-        filter: function (f) {
-          return f(a) ? me : NONE;
-        },
-        toArray: function () {
-          return [a];
-        },
-        toString: function () {
-          return 'some(' + a + ')';
-        },
-        equals: function (o) {
-          return o.is(a);
-        },
-        equals_: function (o, elementEq) {
-          return o.fold(never, function (b) {
-            return elementEq(a, b);
-          });
-        }
-      };
-      return me;
-    };
-    var from = function (value) {
-      return value === null || value === undefined ? NONE : some(value);
-    };
-    var Optional = {
-      some: some,
-      none: none,
-      from: from
-    };
-
-    var isSupported = function (dom) {
-      return dom.style !== undefined && isFunction(dom.style.getPropertyValue);
-    };
-
-    var fromHtml = function (html, scope) {
-      var doc = scope || document;
-      var div = doc.createElement('div');
-      div.innerHTML = html;
-      if (!div.hasChildNodes() || div.childNodes.length > 1) {
-        console.error('HTML does not have a single root node', html);
-        throw new Error('HTML must have a single root node');
-      }
-      return fromDom(div.childNodes[0]);
-    };
-    var fromTag = function (tag, scope) {
-      var doc = scope || document;
-      var node = doc.createElement(tag);
-      return fromDom(node);
-    };
-    var fromText = function (text, scope) {
-      var doc = scope || document;
-      var node = doc.createTextNode(text);
-      return fromDom(node);
-    };
-    var fromDom = function (node) {
-      if (node === null || node === undefined) {
-        throw new Error('Node cannot be null or undefined');
-      }
-      return { dom: node };
-    };
-    var fromPoint = function (docElm, x, y) {
-      return Optional.from(docElm.dom.elementFromPoint(x, y)).map(fromDom);
-    };
-    var SugarElement = {
-      fromHtml: fromHtml,
-      fromTag: fromTag,
-      fromText: fromText,
-      fromDom: fromDom,
-      fromPoint: fromPoint
-    };
-
-    var Global = typeof window !== 'undefined' ? window : Function('return this;')();
-
-    var DOCUMENT = 9;
-    var DOCUMENT_FRAGMENT = 11;
-    var TEXT = 3;
-
-    var type = function (element) {
-      return element.dom.nodeType;
-    };
-    var isType = function (t) {
-      return function (element) {
-        return type(element) === t;
-      };
-    };
-    var isText = isType(TEXT);
-    var isDocument = isType(DOCUMENT);
-    var isDocumentFragment = isType(DOCUMENT_FRAGMENT);
-
-    var owner = function (element) {
-      return SugarElement.fromDom(element.dom.ownerDocument);
-    };
-    var documentOrOwner = function (dos) {
-      return isDocument(dos) ? dos : owner(dos);
-    };
-
-    var isShadowRoot = function (dos) {
-      return isDocumentFragment(dos) && isNonNullable(dos.dom.host);
-    };
-    var supported = isFunction(Element.prototype.attachShadow) && isFunction(Node.prototype.getRootNode);
-    var getRootNode = supported ? function (e) {
-      return SugarElement.fromDom(e.dom.getRootNode());
-    } : documentOrOwner;
-    var getShadowRoot = function (e) {
-      var r = getRootNode(e);
-      return isShadowRoot(r) ? Optional.some(r) : Optional.none();
-    };
-    var getShadowHost = function (e) {
-      return SugarElement.fromDom(e.dom.host);
-    };
-
-    var inBody = function (element) {
-      var dom = isText(element) ? element.dom.parentNode : element.dom;
-      if (dom === undefined || dom === null || dom.ownerDocument === null) {
-        return false;
-      }
-      var doc = dom.ownerDocument;
-      return getShadowRoot(SugarElement.fromDom(dom)).fold(function () {
-        return doc.body.contains(dom);
-      }, compose1(inBody, getShadowHost));
-    };
-
-    var get = function (element, property) {
-      var dom = element.dom;
-      var styles = window.getComputedStyle(dom);
-      var r = styles.getPropertyValue(property);
-      return r === '' && !inBody(element) ? getUnsafeProperty(dom, property) : r;
-    };
-    var getUnsafeProperty = function (dom, property) {
-      return isSupported(dom) ? dom.style.getPropertyValue(property) : '';
-    };
-
-    var getDirection = function (element) {
-      return get(element, 'direction') === 'rtl' ? 'rtl' : 'ltr';
-    };
-
-    var getNodeChangeHandler = function (editor, dir) {
-      return function (api) {
-        var nodeChangeHandler = function (e) {
-          var element = SugarElement.fromDom(e.element);
-          api.setActive(getDirection(element) === dir);
-        };
-        editor.on('NodeChange', nodeChangeHandler);
-        return function () {
-          return editor.off('NodeChange', nodeChangeHandler);
-        };
-      };
-    };
     var register$1 = function (editor) {
-      editor.ui.registry.addToggleButton('ltr', {
-        tooltip: 'Left to right',
-        icon: 'ltr',
+      editor.ui.registry.addButton('code', {
+        icon: 'sourcecode',
+        tooltip: 'Source code',
         onAction: function () {
-          return editor.execCommand('mceDirectionLTR');
-        },
-        onSetup: getNodeChangeHandler(editor, 'ltr')
+          return open(editor);
+        }
       });
-      editor.ui.registry.addToggleButton('rtl', {
-        tooltip: 'Right to left',
-        icon: 'rtl',
+      editor.ui.registry.addMenuItem('code', {
+        icon: 'sourcecode',
+        text: 'Source code',
         onAction: function () {
-          return editor.execCommand('mceDirectionRTL');
-        },
-        onSetup: getNodeChangeHandler(editor, 'rtl')
+          return open(editor);
+        }
       });
     };
 
     function Plugin () {
-      global.add('directionality', function (editor) {
+      global.add('code', function (editor) {
         register(editor);
         register$1(editor);
+        return {};
       });
     }
 
@@ -51916,9 +49865,2060 @@ tinymce.IconManager.add('default', {
 
     var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
 
+    var fireInsertCustomChar = function (editor, chr) {
+      return editor.fire('insertCustomChar', { chr: chr });
+    };
+
+    var insertChar = function (editor, chr) {
+      var evtChr = fireInsertCustomChar(editor, chr).chr;
+      editor.execCommand('mceInsertContent', false, evtChr);
+    };
+
+    var typeOf = function (x) {
+      var t = typeof x;
+      if (x === null) {
+        return 'null';
+      } else if (t === 'object' && (Array.prototype.isPrototypeOf(x) || x.constructor && x.constructor.name === 'Array')) {
+        return 'array';
+      } else if (t === 'object' && (String.prototype.isPrototypeOf(x) || x.constructor && x.constructor.name === 'String')) {
+        return 'string';
+      } else {
+        return t;
+      }
+    };
+    var isType = function (type) {
+      return function (value) {
+        return typeOf(value) === type;
+      };
+    };
+    var isArray = isType('array');
+
+    var noop = function () {
+    };
+    var constant = function (value) {
+      return function () {
+        return value;
+      };
+    };
+    var never = constant(false);
+    var always = constant(true);
+
+    var none = function () {
+      return NONE;
+    };
+    var NONE = function () {
+      var eq = function (o) {
+        return o.isNone();
+      };
+      var call = function (thunk) {
+        return thunk();
+      };
+      var id = function (n) {
+        return n;
+      };
+      var me = {
+        fold: function (n, _s) {
+          return n();
+        },
+        is: never,
+        isSome: never,
+        isNone: always,
+        getOr: id,
+        getOrThunk: call,
+        getOrDie: function (msg) {
+          throw new Error(msg || 'error: getOrDie called on none.');
+        },
+        getOrNull: constant(null),
+        getOrUndefined: constant(undefined),
+        or: id,
+        orThunk: call,
+        map: none,
+        each: noop,
+        bind: none,
+        exists: never,
+        forall: always,
+        filter: none,
+        equals: eq,
+        equals_: eq,
+        toArray: function () {
+          return [];
+        },
+        toString: constant('none()')
+      };
+      return me;
+    }();
+    var some = function (a) {
+      var constant_a = constant(a);
+      var self = function () {
+        return me;
+      };
+      var bind = function (f) {
+        return f(a);
+      };
+      var me = {
+        fold: function (n, s) {
+          return s(a);
+        },
+        is: function (v) {
+          return a === v;
+        },
+        isSome: always,
+        isNone: never,
+        getOr: constant_a,
+        getOrThunk: constant_a,
+        getOrDie: constant_a,
+        getOrNull: constant_a,
+        getOrUndefined: constant_a,
+        or: self,
+        orThunk: self,
+        map: function (f) {
+          return some(f(a));
+        },
+        each: function (f) {
+          f(a);
+        },
+        bind: bind,
+        exists: bind,
+        forall: bind,
+        filter: function (f) {
+          return f(a) ? me : NONE;
+        },
+        toArray: function () {
+          return [a];
+        },
+        toString: function () {
+          return 'some(' + a + ')';
+        },
+        equals: function (o) {
+          return o.is(a);
+        },
+        equals_: function (o, elementEq) {
+          return o.fold(never, function (b) {
+            return elementEq(a, b);
+          });
+        }
+      };
+      return me;
+    };
+    var from = function (value) {
+      return value === null || value === undefined ? NONE : some(value);
+    };
+    var Optional = {
+      some: some,
+      none: none,
+      from: from
+    };
+
+    var nativePush = Array.prototype.push;
+    var map = function (xs, f) {
+      var len = xs.length;
+      var r = new Array(len);
+      for (var i = 0; i < len; i++) {
+        var x = xs[i];
+        r[i] = f(x, i);
+      }
+      return r;
+    };
+    var each = function (xs, f) {
+      for (var i = 0, len = xs.length; i < len; i++) {
+        var x = xs[i];
+        f(x, i);
+      }
+    };
+    var findUntil = function (xs, pred, until) {
+      for (var i = 0, len = xs.length; i < len; i++) {
+        var x = xs[i];
+        if (pred(x, i)) {
+          return Optional.some(x);
+        } else if (until(x, i)) {
+          break;
+        }
+      }
+      return Optional.none();
+    };
+    var find = function (xs, pred) {
+      return findUntil(xs, pred, never);
+    };
+    var flatten = function (xs) {
+      var r = [];
+      for (var i = 0, len = xs.length; i < len; ++i) {
+        if (!isArray(xs[i])) {
+          throw new Error('Arr.flatten item ' + i + ' was not an array, input: ' + xs);
+        }
+        nativePush.apply(r, xs[i]);
+      }
+      return r;
+    };
+    var bind = function (xs, f) {
+      return flatten(map(xs, f));
+    };
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
+
+    var getCharMap = function (editor) {
+      return editor.getParam('charmap');
+    };
+    var getCharMapAppend = function (editor) {
+      return editor.getParam('charmap_append');
+    };
+
+    var isArray$1 = global$1.isArray;
+    var UserDefined = 'User Defined';
+    var getDefaultCharMap = function () {
+      return [
+        {
+          name: 'Currency',
+          characters: [
+            [
+              36,
+              'dollar sign'
+            ],
+            [
+              162,
+              'cent sign'
+            ],
+            [
+              8364,
+              'euro sign'
+            ],
+            [
+              163,
+              'pound sign'
+            ],
+            [
+              165,
+              'yen sign'
+            ],
+            [
+              164,
+              'currency sign'
+            ],
+            [
+              8352,
+              'euro-currency sign'
+            ],
+            [
+              8353,
+              'colon sign'
+            ],
+            [
+              8354,
+              'cruzeiro sign'
+            ],
+            [
+              8355,
+              'french franc sign'
+            ],
+            [
+              8356,
+              'lira sign'
+            ],
+            [
+              8357,
+              'mill sign'
+            ],
+            [
+              8358,
+              'naira sign'
+            ],
+            [
+              8359,
+              'peseta sign'
+            ],
+            [
+              8360,
+              'rupee sign'
+            ],
+            [
+              8361,
+              'won sign'
+            ],
+            [
+              8362,
+              'new sheqel sign'
+            ],
+            [
+              8363,
+              'dong sign'
+            ],
+            [
+              8365,
+              'kip sign'
+            ],
+            [
+              8366,
+              'tugrik sign'
+            ],
+            [
+              8367,
+              'drachma sign'
+            ],
+            [
+              8368,
+              'german penny symbol'
+            ],
+            [
+              8369,
+              'peso sign'
+            ],
+            [
+              8370,
+              'guarani sign'
+            ],
+            [
+              8371,
+              'austral sign'
+            ],
+            [
+              8372,
+              'hryvnia sign'
+            ],
+            [
+              8373,
+              'cedi sign'
+            ],
+            [
+              8374,
+              'livre tournois sign'
+            ],
+            [
+              8375,
+              'spesmilo sign'
+            ],
+            [
+              8376,
+              'tenge sign'
+            ],
+            [
+              8377,
+              'indian rupee sign'
+            ],
+            [
+              8378,
+              'turkish lira sign'
+            ],
+            [
+              8379,
+              'nordic mark sign'
+            ],
+            [
+              8380,
+              'manat sign'
+            ],
+            [
+              8381,
+              'ruble sign'
+            ],
+            [
+              20870,
+              'yen character'
+            ],
+            [
+              20803,
+              'yuan character'
+            ],
+            [
+              22291,
+              'yuan character, in hong kong and taiwan'
+            ],
+            [
+              22278,
+              'yen/yuan character variant one'
+            ]
+          ]
+        },
+        {
+          name: 'Text',
+          characters: [
+            [
+              169,
+              'copyright sign'
+            ],
+            [
+              174,
+              'registered sign'
+            ],
+            [
+              8482,
+              'trade mark sign'
+            ],
+            [
+              8240,
+              'per mille sign'
+            ],
+            [
+              181,
+              'micro sign'
+            ],
+            [
+              183,
+              'middle dot'
+            ],
+            [
+              8226,
+              'bullet'
+            ],
+            [
+              8230,
+              'three dot leader'
+            ],
+            [
+              8242,
+              'minutes / feet'
+            ],
+            [
+              8243,
+              'seconds / inches'
+            ],
+            [
+              167,
+              'section sign'
+            ],
+            [
+              182,
+              'paragraph sign'
+            ],
+            [
+              223,
+              'sharp s / ess-zed'
+            ]
+          ]
+        },
+        {
+          name: 'Quotations',
+          characters: [
+            [
+              8249,
+              'single left-pointing angle quotation mark'
+            ],
+            [
+              8250,
+              'single right-pointing angle quotation mark'
+            ],
+            [
+              171,
+              'left pointing guillemet'
+            ],
+            [
+              187,
+              'right pointing guillemet'
+            ],
+            [
+              8216,
+              'left single quotation mark'
+            ],
+            [
+              8217,
+              'right single quotation mark'
+            ],
+            [
+              8220,
+              'left double quotation mark'
+            ],
+            [
+              8221,
+              'right double quotation mark'
+            ],
+            [
+              8218,
+              'single low-9 quotation mark'
+            ],
+            [
+              8222,
+              'double low-9 quotation mark'
+            ],
+            [
+              60,
+              'less-than sign'
+            ],
+            [
+              62,
+              'greater-than sign'
+            ],
+            [
+              8804,
+              'less-than or equal to'
+            ],
+            [
+              8805,
+              'greater-than or equal to'
+            ],
+            [
+              8211,
+              'en dash'
+            ],
+            [
+              8212,
+              'em dash'
+            ],
+            [
+              175,
+              'macron'
+            ],
+            [
+              8254,
+              'overline'
+            ],
+            [
+              164,
+              'currency sign'
+            ],
+            [
+              166,
+              'broken bar'
+            ],
+            [
+              168,
+              'diaeresis'
+            ],
+            [
+              161,
+              'inverted exclamation mark'
+            ],
+            [
+              191,
+              'turned question mark'
+            ],
+            [
+              710,
+              'circumflex accent'
+            ],
+            [
+              732,
+              'small tilde'
+            ],
+            [
+              176,
+              'degree sign'
+            ],
+            [
+              8722,
+              'minus sign'
+            ],
+            [
+              177,
+              'plus-minus sign'
+            ],
+            [
+              247,
+              'division sign'
+            ],
+            [
+              8260,
+              'fraction slash'
+            ],
+            [
+              215,
+              'multiplication sign'
+            ],
+            [
+              185,
+              'superscript one'
+            ],
+            [
+              178,
+              'superscript two'
+            ],
+            [
+              179,
+              'superscript three'
+            ],
+            [
+              188,
+              'fraction one quarter'
+            ],
+            [
+              189,
+              'fraction one half'
+            ],
+            [
+              190,
+              'fraction three quarters'
+            ]
+          ]
+        },
+        {
+          name: 'Mathematical',
+          characters: [
+            [
+              402,
+              'function / florin'
+            ],
+            [
+              8747,
+              'integral'
+            ],
+            [
+              8721,
+              'n-ary sumation'
+            ],
+            [
+              8734,
+              'infinity'
+            ],
+            [
+              8730,
+              'square root'
+            ],
+            [
+              8764,
+              'similar to'
+            ],
+            [
+              8773,
+              'approximately equal to'
+            ],
+            [
+              8776,
+              'almost equal to'
+            ],
+            [
+              8800,
+              'not equal to'
+            ],
+            [
+              8801,
+              'identical to'
+            ],
+            [
+              8712,
+              'element of'
+            ],
+            [
+              8713,
+              'not an element of'
+            ],
+            [
+              8715,
+              'contains as member'
+            ],
+            [
+              8719,
+              'n-ary product'
+            ],
+            [
+              8743,
+              'logical and'
+            ],
+            [
+              8744,
+              'logical or'
+            ],
+            [
+              172,
+              'not sign'
+            ],
+            [
+              8745,
+              'intersection'
+            ],
+            [
+              8746,
+              'union'
+            ],
+            [
+              8706,
+              'partial differential'
+            ],
+            [
+              8704,
+              'for all'
+            ],
+            [
+              8707,
+              'there exists'
+            ],
+            [
+              8709,
+              'diameter'
+            ],
+            [
+              8711,
+              'backward difference'
+            ],
+            [
+              8727,
+              'asterisk operator'
+            ],
+            [
+              8733,
+              'proportional to'
+            ],
+            [
+              8736,
+              'angle'
+            ]
+          ]
+        },
+        {
+          name: 'Extended Latin',
+          characters: [
+            [
+              192,
+              'A - grave'
+            ],
+            [
+              193,
+              'A - acute'
+            ],
+            [
+              194,
+              'A - circumflex'
+            ],
+            [
+              195,
+              'A - tilde'
+            ],
+            [
+              196,
+              'A - diaeresis'
+            ],
+            [
+              197,
+              'A - ring above'
+            ],
+            [
+              256,
+              'A - macron'
+            ],
+            [
+              198,
+              'ligature AE'
+            ],
+            [
+              199,
+              'C - cedilla'
+            ],
+            [
+              200,
+              'E - grave'
+            ],
+            [
+              201,
+              'E - acute'
+            ],
+            [
+              202,
+              'E - circumflex'
+            ],
+            [
+              203,
+              'E - diaeresis'
+            ],
+            [
+              274,
+              'E - macron'
+            ],
+            [
+              204,
+              'I - grave'
+            ],
+            [
+              205,
+              'I - acute'
+            ],
+            [
+              206,
+              'I - circumflex'
+            ],
+            [
+              207,
+              'I - diaeresis'
+            ],
+            [
+              298,
+              'I - macron'
+            ],
+            [
+              208,
+              'ETH'
+            ],
+            [
+              209,
+              'N - tilde'
+            ],
+            [
+              210,
+              'O - grave'
+            ],
+            [
+              211,
+              'O - acute'
+            ],
+            [
+              212,
+              'O - circumflex'
+            ],
+            [
+              213,
+              'O - tilde'
+            ],
+            [
+              214,
+              'O - diaeresis'
+            ],
+            [
+              216,
+              'O - slash'
+            ],
+            [
+              332,
+              'O - macron'
+            ],
+            [
+              338,
+              'ligature OE'
+            ],
+            [
+              352,
+              'S - caron'
+            ],
+            [
+              217,
+              'U - grave'
+            ],
+            [
+              218,
+              'U - acute'
+            ],
+            [
+              219,
+              'U - circumflex'
+            ],
+            [
+              220,
+              'U - diaeresis'
+            ],
+            [
+              362,
+              'U - macron'
+            ],
+            [
+              221,
+              'Y - acute'
+            ],
+            [
+              376,
+              'Y - diaeresis'
+            ],
+            [
+              562,
+              'Y - macron'
+            ],
+            [
+              222,
+              'THORN'
+            ],
+            [
+              224,
+              'a - grave'
+            ],
+            [
+              225,
+              'a - acute'
+            ],
+            [
+              226,
+              'a - circumflex'
+            ],
+            [
+              227,
+              'a - tilde'
+            ],
+            [
+              228,
+              'a - diaeresis'
+            ],
+            [
+              229,
+              'a - ring above'
+            ],
+            [
+              257,
+              'a - macron'
+            ],
+            [
+              230,
+              'ligature ae'
+            ],
+            [
+              231,
+              'c - cedilla'
+            ],
+            [
+              232,
+              'e - grave'
+            ],
+            [
+              233,
+              'e - acute'
+            ],
+            [
+              234,
+              'e - circumflex'
+            ],
+            [
+              235,
+              'e - diaeresis'
+            ],
+            [
+              275,
+              'e - macron'
+            ],
+            [
+              236,
+              'i - grave'
+            ],
+            [
+              237,
+              'i - acute'
+            ],
+            [
+              238,
+              'i - circumflex'
+            ],
+            [
+              239,
+              'i - diaeresis'
+            ],
+            [
+              299,
+              'i - macron'
+            ],
+            [
+              240,
+              'eth'
+            ],
+            [
+              241,
+              'n - tilde'
+            ],
+            [
+              242,
+              'o - grave'
+            ],
+            [
+              243,
+              'o - acute'
+            ],
+            [
+              244,
+              'o - circumflex'
+            ],
+            [
+              245,
+              'o - tilde'
+            ],
+            [
+              246,
+              'o - diaeresis'
+            ],
+            [
+              248,
+              'o slash'
+            ],
+            [
+              333,
+              'o macron'
+            ],
+            [
+              339,
+              'ligature oe'
+            ],
+            [
+              353,
+              's - caron'
+            ],
+            [
+              249,
+              'u - grave'
+            ],
+            [
+              250,
+              'u - acute'
+            ],
+            [
+              251,
+              'u - circumflex'
+            ],
+            [
+              252,
+              'u - diaeresis'
+            ],
+            [
+              363,
+              'u - macron'
+            ],
+            [
+              253,
+              'y - acute'
+            ],
+            [
+              254,
+              'thorn'
+            ],
+            [
+              255,
+              'y - diaeresis'
+            ],
+            [
+              563,
+              'y - macron'
+            ],
+            [
+              913,
+              'Alpha'
+            ],
+            [
+              914,
+              'Beta'
+            ],
+            [
+              915,
+              'Gamma'
+            ],
+            [
+              916,
+              'Delta'
+            ],
+            [
+              917,
+              'Epsilon'
+            ],
+            [
+              918,
+              'Zeta'
+            ],
+            [
+              919,
+              'Eta'
+            ],
+            [
+              920,
+              'Theta'
+            ],
+            [
+              921,
+              'Iota'
+            ],
+            [
+              922,
+              'Kappa'
+            ],
+            [
+              923,
+              'Lambda'
+            ],
+            [
+              924,
+              'Mu'
+            ],
+            [
+              925,
+              'Nu'
+            ],
+            [
+              926,
+              'Xi'
+            ],
+            [
+              927,
+              'Omicron'
+            ],
+            [
+              928,
+              'Pi'
+            ],
+            [
+              929,
+              'Rho'
+            ],
+            [
+              931,
+              'Sigma'
+            ],
+            [
+              932,
+              'Tau'
+            ],
+            [
+              933,
+              'Upsilon'
+            ],
+            [
+              934,
+              'Phi'
+            ],
+            [
+              935,
+              'Chi'
+            ],
+            [
+              936,
+              'Psi'
+            ],
+            [
+              937,
+              'Omega'
+            ],
+            [
+              945,
+              'alpha'
+            ],
+            [
+              946,
+              'beta'
+            ],
+            [
+              947,
+              'gamma'
+            ],
+            [
+              948,
+              'delta'
+            ],
+            [
+              949,
+              'epsilon'
+            ],
+            [
+              950,
+              'zeta'
+            ],
+            [
+              951,
+              'eta'
+            ],
+            [
+              952,
+              'theta'
+            ],
+            [
+              953,
+              'iota'
+            ],
+            [
+              954,
+              'kappa'
+            ],
+            [
+              955,
+              'lambda'
+            ],
+            [
+              956,
+              'mu'
+            ],
+            [
+              957,
+              'nu'
+            ],
+            [
+              958,
+              'xi'
+            ],
+            [
+              959,
+              'omicron'
+            ],
+            [
+              960,
+              'pi'
+            ],
+            [
+              961,
+              'rho'
+            ],
+            [
+              962,
+              'final sigma'
+            ],
+            [
+              963,
+              'sigma'
+            ],
+            [
+              964,
+              'tau'
+            ],
+            [
+              965,
+              'upsilon'
+            ],
+            [
+              966,
+              'phi'
+            ],
+            [
+              967,
+              'chi'
+            ],
+            [
+              968,
+              'psi'
+            ],
+            [
+              969,
+              'omega'
+            ]
+          ]
+        },
+        {
+          name: 'Symbols',
+          characters: [
+            [
+              8501,
+              'alef symbol'
+            ],
+            [
+              982,
+              'pi symbol'
+            ],
+            [
+              8476,
+              'real part symbol'
+            ],
+            [
+              978,
+              'upsilon - hook symbol'
+            ],
+            [
+              8472,
+              'Weierstrass p'
+            ],
+            [
+              8465,
+              'imaginary part'
+            ]
+          ]
+        },
+        {
+          name: 'Arrows',
+          characters: [
+            [
+              8592,
+              'leftwards arrow'
+            ],
+            [
+              8593,
+              'upwards arrow'
+            ],
+            [
+              8594,
+              'rightwards arrow'
+            ],
+            [
+              8595,
+              'downwards arrow'
+            ],
+            [
+              8596,
+              'left right arrow'
+            ],
+            [
+              8629,
+              'carriage return'
+            ],
+            [
+              8656,
+              'leftwards double arrow'
+            ],
+            [
+              8657,
+              'upwards double arrow'
+            ],
+            [
+              8658,
+              'rightwards double arrow'
+            ],
+            [
+              8659,
+              'downwards double arrow'
+            ],
+            [
+              8660,
+              'left right double arrow'
+            ],
+            [
+              8756,
+              'therefore'
+            ],
+            [
+              8834,
+              'subset of'
+            ],
+            [
+              8835,
+              'superset of'
+            ],
+            [
+              8836,
+              'not a subset of'
+            ],
+            [
+              8838,
+              'subset of or equal to'
+            ],
+            [
+              8839,
+              'superset of or equal to'
+            ],
+            [
+              8853,
+              'circled plus'
+            ],
+            [
+              8855,
+              'circled times'
+            ],
+            [
+              8869,
+              'perpendicular'
+            ],
+            [
+              8901,
+              'dot operator'
+            ],
+            [
+              8968,
+              'left ceiling'
+            ],
+            [
+              8969,
+              'right ceiling'
+            ],
+            [
+              8970,
+              'left floor'
+            ],
+            [
+              8971,
+              'right floor'
+            ],
+            [
+              9001,
+              'left-pointing angle bracket'
+            ],
+            [
+              9002,
+              'right-pointing angle bracket'
+            ],
+            [
+              9674,
+              'lozenge'
+            ],
+            [
+              9824,
+              'black spade suit'
+            ],
+            [
+              9827,
+              'black club suit'
+            ],
+            [
+              9829,
+              'black heart suit'
+            ],
+            [
+              9830,
+              'black diamond suit'
+            ],
+            [
+              8194,
+              'en space'
+            ],
+            [
+              8195,
+              'em space'
+            ],
+            [
+              8201,
+              'thin space'
+            ],
+            [
+              8204,
+              'zero width non-joiner'
+            ],
+            [
+              8205,
+              'zero width joiner'
+            ],
+            [
+              8206,
+              'left-to-right mark'
+            ],
+            [
+              8207,
+              'right-to-left mark'
+            ]
+          ]
+        }
+      ];
+    };
+    var charmapFilter = function (charmap) {
+      return global$1.grep(charmap, function (item) {
+        return isArray$1(item) && item.length === 2;
+      });
+    };
+    var getCharsFromSetting = function (settingValue) {
+      if (isArray$1(settingValue)) {
+        return [].concat(charmapFilter(settingValue));
+      }
+      if (typeof settingValue === 'function') {
+        return settingValue();
+      }
+      return [];
+    };
+    var extendCharMap = function (editor, charmap) {
+      var userCharMap = getCharMap(editor);
+      if (userCharMap) {
+        charmap = [{
+            name: UserDefined,
+            characters: getCharsFromSetting(userCharMap)
+          }];
+      }
+      var userCharMapAppend = getCharMapAppend(editor);
+      if (userCharMapAppend) {
+        var userDefinedGroup = global$1.grep(charmap, function (cg) {
+          return cg.name === UserDefined;
+        });
+        if (userDefinedGroup.length) {
+          userDefinedGroup[0].characters = [].concat(userDefinedGroup[0].characters).concat(getCharsFromSetting(userCharMapAppend));
+          return charmap;
+        }
+        return [].concat(charmap).concat({
+          name: UserDefined,
+          characters: getCharsFromSetting(userCharMapAppend)
+        });
+      }
+      return charmap;
+    };
+    var getCharMap$1 = function (editor) {
+      var groups = extendCharMap(editor, getDefaultCharMap());
+      return groups.length > 1 ? [{
+          name: 'All',
+          characters: bind(groups, function (g) {
+            return g.characters;
+          })
+        }].concat(groups) : groups;
+    };
+
+    var get = function (editor) {
+      var getCharMap = function () {
+        return getCharMap$1(editor);
+      };
+      var insertChar$1 = function (chr) {
+        insertChar(editor, chr);
+      };
+      return {
+        getCharMap: getCharMap,
+        insertChar: insertChar$1
+      };
+    };
+
+    var Cell = function (initial) {
+      var value = initial;
+      var get = function () {
+        return value;
+      };
+      var set = function (v) {
+        value = v;
+      };
+      return {
+        get: get,
+        set: set
+      };
+    };
+
+    var last = function (fn, rate) {
+      var timer = null;
+      var cancel = function () {
+        if (timer !== null) {
+          clearTimeout(timer);
+          timer = null;
+        }
+      };
+      var throttle = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+          args[_i] = arguments[_i];
+        }
+        if (timer !== null) {
+          clearTimeout(timer);
+        }
+        timer = setTimeout(function () {
+          fn.apply(null, args);
+          timer = null;
+        }, rate);
+      };
+      return {
+        cancel: cancel,
+        throttle: throttle
+      };
+    };
+
+    var nativeFromCodePoint = String.fromCodePoint;
+    var contains = function (str, substr) {
+      return str.indexOf(substr) !== -1;
+    };
+    var fromCodePoint = function () {
+      var codePoints = [];
+      for (var _i = 0; _i < arguments.length; _i++) {
+        codePoints[_i] = arguments[_i];
+      }
+      if (nativeFromCodePoint) {
+        return nativeFromCodePoint.apply(void 0, codePoints);
+      } else {
+        var codeUnits = [];
+        var codeLen = 0;
+        var result = '';
+        for (var index = 0, len = codePoints.length; index !== len; ++index) {
+          var codePoint = +codePoints[index];
+          if (!(codePoint < 1114111 && codePoint >>> 0 === codePoint)) {
+            throw RangeError('Invalid code point: ' + codePoint);
+          }
+          if (codePoint <= 65535) {
+            codeLen = codeUnits.push(codePoint);
+          } else {
+            codePoint -= 65536;
+            codeLen = codeUnits.push((codePoint >> 10) + 55296, codePoint % 1024 + 56320);
+          }
+          if (codeLen >= 16383) {
+            result += String.fromCharCode.apply(null, codeUnits);
+            codeUnits.length = 0;
+          }
+        }
+        return result + String.fromCharCode.apply(null, codeUnits);
+      }
+    };
+
+    var charMatches = function (charCode, name, lowerCasePattern) {
+      if (contains(fromCodePoint(charCode).toLowerCase(), lowerCasePattern)) {
+        return true;
+      } else {
+        return contains(name.toLowerCase(), lowerCasePattern) || contains(name.toLowerCase().replace(/\s+/g, ''), lowerCasePattern);
+      }
+    };
+    var scan = function (group, pattern) {
+      var matches = [];
+      var lowerCasePattern = pattern.toLowerCase();
+      each(group.characters, function (g) {
+        if (charMatches(g[0], g[1], lowerCasePattern)) {
+          matches.push(g);
+        }
+      });
+      return map(matches, function (m) {
+        return {
+          text: m[1],
+          value: fromCodePoint(m[0]),
+          icon: fromCodePoint(m[0])
+        };
+      });
+    };
+
+    var patternName = 'pattern';
+    var open = function (editor, charMap) {
+      var makeGroupItems = function () {
+        return [
+          {
+            label: 'Search',
+            type: 'input',
+            name: patternName
+          },
+          {
+            type: 'collection',
+            name: 'results'
+          }
+        ];
+      };
+      var makeTabs = function () {
+        return map(charMap, function (charGroup) {
+          return {
+            title: charGroup.name,
+            name: charGroup.name,
+            items: makeGroupItems()
+          };
+        });
+      };
+      var makePanel = function () {
+        return {
+          type: 'panel',
+          items: makeGroupItems()
+        };
+      };
+      var makeTabPanel = function () {
+        return {
+          type: 'tabpanel',
+          tabs: makeTabs()
+        };
+      };
+      var currentTab = charMap.length === 1 ? Cell(UserDefined) : Cell('All');
+      var scanAndSet = function (dialogApi, pattern) {
+        find(charMap, function (group) {
+          return group.name === currentTab.get();
+        }).each(function (f) {
+          var items = scan(f, pattern);
+          dialogApi.setData({ results: items });
+        });
+      };
+      var SEARCH_DELAY = 40;
+      var updateFilter = last(function (dialogApi) {
+        var pattern = dialogApi.getData().pattern;
+        scanAndSet(dialogApi, pattern);
+      }, SEARCH_DELAY);
+      var body = charMap.length === 1 ? makePanel() : makeTabPanel();
+      var initialData = {
+        pattern: '',
+        results: scan(charMap[0], '')
+      };
+      var bridgeSpec = {
+        title: 'Special Character',
+        size: 'normal',
+        body: body,
+        buttons: [{
+            type: 'cancel',
+            name: 'close',
+            text: 'Close',
+            primary: true
+          }],
+        initialData: initialData,
+        onAction: function (api, details) {
+          if (details.name === 'results') {
+            insertChar(editor, details.value);
+            api.close();
+          }
+        },
+        onTabChange: function (dialogApi, details) {
+          currentTab.set(details.newTabName);
+          updateFilter.throttle(dialogApi);
+        },
+        onChange: function (dialogApi, changeData) {
+          if (changeData.name === patternName) {
+            updateFilter.throttle(dialogApi);
+          }
+        }
+      };
+      var dialogApi = editor.windowManager.open(bridgeSpec);
+      dialogApi.focus(patternName);
+    };
+
+    var register = function (editor, charMap) {
+      editor.addCommand('mceShowCharmap', function () {
+        open(editor, charMap);
+      });
+    };
+
+    var global$2 = tinymce.util.Tools.resolve('tinymce.util.Promise');
+
+    var init = function (editor, all) {
+      editor.ui.registry.addAutocompleter('charmap', {
+        ch: ':',
+        columns: 'auto',
+        minChars: 2,
+        fetch: function (pattern, _maxResults) {
+          return new global$2(function (resolve, _reject) {
+            resolve(scan(all, pattern));
+          });
+        },
+        onAction: function (autocompleteApi, rng, value) {
+          editor.selection.setRng(rng);
+          editor.insertContent(value);
+          autocompleteApi.hide();
+        }
+      });
+    };
+
+    var register$1 = function (editor) {
+      editor.ui.registry.addButton('charmap', {
+        icon: 'insert-character',
+        tooltip: 'Special character',
+        onAction: function () {
+          return editor.execCommand('mceShowCharmap');
+        }
+      });
+      editor.ui.registry.addMenuItem('charmap', {
+        icon: 'insert-character',
+        text: 'Special character...',
+        onAction: function () {
+          return editor.execCommand('mceShowCharmap');
+        }
+      });
+    };
+
+    function Plugin () {
+      global.add('charmap', function (editor) {
+        var charMap = getCharMap$1(editor);
+        register(editor, charMap);
+        register$1(editor);
+        init(editor, charMap[0]);
+        return get(editor);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
     function Plugin () {
       global.add('contextmenu', function () {
         console.warn('Context menu plugin is now built in to the core editor, please remove it from your editor configuration');
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    function Plugin () {
+      global.add('colorpicker', function () {
+        console.warn('Color picker plugin is now built in to the core editor, please remove it from your editor configuration');
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
+
+    var setDir = function (editor, dir) {
+      var dom = editor.dom;
+      var curDir;
+      var blocks = editor.selection.getSelectedBlocks();
+      if (blocks.length) {
+        curDir = dom.getAttrib(blocks[0], 'dir');
+        global$1.each(blocks, function (block) {
+          if (!dom.getParent(block.parentNode, '*[dir="' + dir + '"]', dom.getRoot())) {
+            dom.setAttrib(block, 'dir', curDir !== dir ? dir : null);
+          }
+        });
+        editor.nodeChanged();
+      }
+    };
+
+    var register = function (editor) {
+      editor.addCommand('mceDirectionLTR', function () {
+        setDir(editor, 'ltr');
+      });
+      editor.addCommand('mceDirectionRTL', function () {
+        setDir(editor, 'rtl');
+      });
+    };
+
+    var isSimpleType = function (type) {
+      return function (value) {
+        return typeof value === type;
+      };
+    };
+    var isNullable = function (a) {
+      return a === null || a === undefined;
+    };
+    var isNonNullable = function (a) {
+      return !isNullable(a);
+    };
+    var isFunction = isSimpleType('function');
+
+    var noop = function () {
+    };
+    var compose1 = function (fbc, fab) {
+      return function (a) {
+        return fbc(fab(a));
+      };
+    };
+    var constant = function (value) {
+      return function () {
+        return value;
+      };
+    };
+    var never = constant(false);
+    var always = constant(true);
+
+    var none = function () {
+      return NONE;
+    };
+    var NONE = function () {
+      var eq = function (o) {
+        return o.isNone();
+      };
+      var call = function (thunk) {
+        return thunk();
+      };
+      var id = function (n) {
+        return n;
+      };
+      var me = {
+        fold: function (n, _s) {
+          return n();
+        },
+        is: never,
+        isSome: never,
+        isNone: always,
+        getOr: id,
+        getOrThunk: call,
+        getOrDie: function (msg) {
+          throw new Error(msg || 'error: getOrDie called on none.');
+        },
+        getOrNull: constant(null),
+        getOrUndefined: constant(undefined),
+        or: id,
+        orThunk: call,
+        map: none,
+        each: noop,
+        bind: none,
+        exists: never,
+        forall: always,
+        filter: none,
+        equals: eq,
+        equals_: eq,
+        toArray: function () {
+          return [];
+        },
+        toString: constant('none()')
+      };
+      return me;
+    }();
+    var some = function (a) {
+      var constant_a = constant(a);
+      var self = function () {
+        return me;
+      };
+      var bind = function (f) {
+        return f(a);
+      };
+      var me = {
+        fold: function (n, s) {
+          return s(a);
+        },
+        is: function (v) {
+          return a === v;
+        },
+        isSome: always,
+        isNone: never,
+        getOr: constant_a,
+        getOrThunk: constant_a,
+        getOrDie: constant_a,
+        getOrNull: constant_a,
+        getOrUndefined: constant_a,
+        or: self,
+        orThunk: self,
+        map: function (f) {
+          return some(f(a));
+        },
+        each: function (f) {
+          f(a);
+        },
+        bind: bind,
+        exists: bind,
+        forall: bind,
+        filter: function (f) {
+          return f(a) ? me : NONE;
+        },
+        toArray: function () {
+          return [a];
+        },
+        toString: function () {
+          return 'some(' + a + ')';
+        },
+        equals: function (o) {
+          return o.is(a);
+        },
+        equals_: function (o, elementEq) {
+          return o.fold(never, function (b) {
+            return elementEq(a, b);
+          });
+        }
+      };
+      return me;
+    };
+    var from = function (value) {
+      return value === null || value === undefined ? NONE : some(value);
+    };
+    var Optional = {
+      some: some,
+      none: none,
+      from: from
+    };
+
+    var isSupported = function (dom) {
+      return dom.style !== undefined && isFunction(dom.style.getPropertyValue);
+    };
+
+    var fromHtml = function (html, scope) {
+      var doc = scope || document;
+      var div = doc.createElement('div');
+      div.innerHTML = html;
+      if (!div.hasChildNodes() || div.childNodes.length > 1) {
+        console.error('HTML does not have a single root node', html);
+        throw new Error('HTML must have a single root node');
+      }
+      return fromDom(div.childNodes[0]);
+    };
+    var fromTag = function (tag, scope) {
+      var doc = scope || document;
+      var node = doc.createElement(tag);
+      return fromDom(node);
+    };
+    var fromText = function (text, scope) {
+      var doc = scope || document;
+      var node = doc.createTextNode(text);
+      return fromDom(node);
+    };
+    var fromDom = function (node) {
+      if (node === null || node === undefined) {
+        throw new Error('Node cannot be null or undefined');
+      }
+      return { dom: node };
+    };
+    var fromPoint = function (docElm, x, y) {
+      return Optional.from(docElm.dom.elementFromPoint(x, y)).map(fromDom);
+    };
+    var SugarElement = {
+      fromHtml: fromHtml,
+      fromTag: fromTag,
+      fromText: fromText,
+      fromDom: fromDom,
+      fromPoint: fromPoint
+    };
+
+    var Global = typeof window !== 'undefined' ? window : Function('return this;')();
+
+    var DOCUMENT = 9;
+    var DOCUMENT_FRAGMENT = 11;
+    var TEXT = 3;
+
+    var type = function (element) {
+      return element.dom.nodeType;
+    };
+    var isType = function (t) {
+      return function (element) {
+        return type(element) === t;
+      };
+    };
+    var isText = isType(TEXT);
+    var isDocument = isType(DOCUMENT);
+    var isDocumentFragment = isType(DOCUMENT_FRAGMENT);
+
+    var owner = function (element) {
+      return SugarElement.fromDom(element.dom.ownerDocument);
+    };
+    var documentOrOwner = function (dos) {
+      return isDocument(dos) ? dos : owner(dos);
+    };
+
+    var isShadowRoot = function (dos) {
+      return isDocumentFragment(dos) && isNonNullable(dos.dom.host);
+    };
+    var supported = isFunction(Element.prototype.attachShadow) && isFunction(Node.prototype.getRootNode);
+    var getRootNode = supported ? function (e) {
+      return SugarElement.fromDom(e.dom.getRootNode());
+    } : documentOrOwner;
+    var getShadowRoot = function (e) {
+      var r = getRootNode(e);
+      return isShadowRoot(r) ? Optional.some(r) : Optional.none();
+    };
+    var getShadowHost = function (e) {
+      return SugarElement.fromDom(e.dom.host);
+    };
+
+    var inBody = function (element) {
+      var dom = isText(element) ? element.dom.parentNode : element.dom;
+      if (dom === undefined || dom === null || dom.ownerDocument === null) {
+        return false;
+      }
+      var doc = dom.ownerDocument;
+      return getShadowRoot(SugarElement.fromDom(dom)).fold(function () {
+        return doc.body.contains(dom);
+      }, compose1(inBody, getShadowHost));
+    };
+
+    var get = function (element, property) {
+      var dom = element.dom;
+      var styles = window.getComputedStyle(dom);
+      var r = styles.getPropertyValue(property);
+      return r === '' && !inBody(element) ? getUnsafeProperty(dom, property) : r;
+    };
+    var getUnsafeProperty = function (dom, property) {
+      return isSupported(dom) ? dom.style.getPropertyValue(property) : '';
+    };
+
+    var getDirection = function (element) {
+      return get(element, 'direction') === 'rtl' ? 'rtl' : 'ltr';
+    };
+
+    var getNodeChangeHandler = function (editor, dir) {
+      return function (api) {
+        var nodeChangeHandler = function (e) {
+          var element = SugarElement.fromDom(e.element);
+          api.setActive(getDirection(element) === dir);
+        };
+        editor.on('NodeChange', nodeChangeHandler);
+        return function () {
+          return editor.off('NodeChange', nodeChangeHandler);
+        };
+      };
+    };
+    var register$1 = function (editor) {
+      editor.ui.registry.addToggleButton('ltr', {
+        tooltip: 'Left to right',
+        icon: 'ltr',
+        onAction: function () {
+          return editor.execCommand('mceDirectionLTR');
+        },
+        onSetup: getNodeChangeHandler(editor, 'ltr')
+      });
+      editor.ui.registry.addToggleButton('rtl', {
+        tooltip: 'Right to left',
+        icon: 'rtl',
+        onAction: function () {
+          return editor.execCommand('mceDirectionRTL');
+        },
+        onSetup: getNodeChangeHandler(editor, 'rtl')
+      });
+    };
+
+    function Plugin () {
+      global.add('directionality', function (editor) {
+        register(editor);
+        register$1(editor);
       });
     }
 
@@ -52525,551 +52525,6 @@ tinymce.IconManager.add('default', {
         register(editor, database);
         init(editor, database);
         setup(editor);
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var Cell = function (initial) {
-      var value = initial;
-      var get = function () {
-        return value;
-      };
-      var set = function (v) {
-        value = v;
-      };
-      return {
-        get: get,
-        set: set
-      };
-    };
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var __assign = function () {
-      __assign = Object.assign || function __assign(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-          s = arguments[i];
-          for (var p in s)
-            if (Object.prototype.hasOwnProperty.call(s, p))
-              t[p] = s[p];
-        }
-        return t;
-      };
-      return __assign.apply(this, arguments);
-    };
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
-
-    var global$2 = tinymce.util.Tools.resolve('tinymce.html.DomParser');
-
-    var global$3 = tinymce.util.Tools.resolve('tinymce.html.Node');
-
-    var global$4 = tinymce.util.Tools.resolve('tinymce.html.Serializer');
-
-    var shouldHideInSourceView = function (editor) {
-      return editor.getParam('fullpage_hide_in_source_view');
-    };
-    var getDefaultXmlPi = function (editor) {
-      return editor.getParam('fullpage_default_xml_pi');
-    };
-    var getDefaultEncoding = function (editor) {
-      return editor.getParam('fullpage_default_encoding');
-    };
-    var getDefaultFontFamily = function (editor) {
-      return editor.getParam('fullpage_default_font_family');
-    };
-    var getDefaultFontSize = function (editor) {
-      return editor.getParam('fullpage_default_font_size');
-    };
-    var getDefaultTextColor = function (editor) {
-      return editor.getParam('fullpage_default_text_color');
-    };
-    var getDefaultTitle = function (editor) {
-      return editor.getParam('fullpage_default_title');
-    };
-    var getDefaultDocType = function (editor) {
-      return editor.getParam('fullpage_default_doctype', '<!DOCTYPE html>');
-    };
-    var getProtect = function (editor) {
-      return editor.getParam('protect');
-    };
-
-    var parseHeader = function (head) {
-      return global$2({
-        validate: false,
-        root_name: '#document'
-      }).parse(head, { format: 'xhtml' });
-    };
-    var htmlToData = function (editor, head) {
-      var headerFragment = parseHeader(head);
-      var data = {};
-      var elm, matches;
-      var getAttr = function (elm, name) {
-        var value = elm.attr(name);
-        return value || '';
-      };
-      data.fontface = getDefaultFontFamily(editor);
-      data.fontsize = getDefaultFontSize(editor);
-      elm = headerFragment.firstChild;
-      if (elm.type === 7) {
-        data.xml_pi = true;
-        matches = /encoding="([^"]+)"/.exec(elm.value);
-        if (matches) {
-          data.docencoding = matches[1];
-        }
-      }
-      elm = headerFragment.getAll('#doctype')[0];
-      if (elm) {
-        data.doctype = '<!DOCTYPE' + elm.value + '>';
-      }
-      elm = headerFragment.getAll('title')[0];
-      if (elm && elm.firstChild) {
-        data.title = elm.firstChild.value;
-      }
-      global$1.each(headerFragment.getAll('meta'), function (meta) {
-        var name = meta.attr('name');
-        var httpEquiv = meta.attr('http-equiv');
-        var matches;
-        if (name) {
-          data[name.toLowerCase()] = meta.attr('content');
-        } else if (httpEquiv === 'Content-Type') {
-          matches = /charset\s*=\s*(.*)\s*/gi.exec(meta.attr('content'));
-          if (matches) {
-            data.docencoding = matches[1];
-          }
-        }
-      });
-      elm = headerFragment.getAll('html')[0];
-      if (elm) {
-        data.langcode = getAttr(elm, 'lang') || getAttr(elm, 'xml:lang');
-      }
-      data.stylesheets = [];
-      global$1.each(headerFragment.getAll('link'), function (link) {
-        if (link.attr('rel') === 'stylesheet') {
-          data.stylesheets.push(link.attr('href'));
-        }
-      });
-      elm = headerFragment.getAll('body')[0];
-      if (elm) {
-        data.langdir = getAttr(elm, 'dir');
-        data.style = getAttr(elm, 'style');
-        data.visited_color = getAttr(elm, 'vlink');
-        data.link_color = getAttr(elm, 'link');
-        data.active_color = getAttr(elm, 'alink');
-      }
-      return data;
-    };
-    var dataToHtml = function (editor, data, head) {
-      var headElement, elm, value;
-      var dom = editor.dom;
-      var setAttr = function (elm, name, value) {
-        elm.attr(name, value ? value : undefined);
-      };
-      var addHeadNode = function (node) {
-        if (headElement.firstChild) {
-          headElement.insert(node, headElement.firstChild);
-        } else {
-          headElement.append(node);
-        }
-      };
-      var headerFragment = parseHeader(head);
-      headElement = headerFragment.getAll('head')[0];
-      if (!headElement) {
-        elm = headerFragment.getAll('html')[0];
-        headElement = new global$3('head', 1);
-        if (elm.firstChild) {
-          elm.insert(headElement, elm.firstChild, true);
-        } else {
-          elm.append(headElement);
-        }
-      }
-      elm = headerFragment.firstChild;
-      if (data.xml_pi) {
-        value = 'version="1.0"';
-        if (data.docencoding) {
-          value += ' encoding="' + data.docencoding + '"';
-        }
-        if (elm.type !== 7) {
-          elm = new global$3('xml', 7);
-          headerFragment.insert(elm, headerFragment.firstChild, true);
-        }
-        elm.value = value;
-      } else if (elm && elm.type === 7) {
-        elm.remove();
-      }
-      elm = headerFragment.getAll('#doctype')[0];
-      if (data.doctype) {
-        if (!elm) {
-          elm = new global$3('#doctype', 10);
-          if (data.xml_pi) {
-            headerFragment.insert(elm, headerFragment.firstChild);
-          } else {
-            addHeadNode(elm);
-          }
-        }
-        elm.value = data.doctype.substring(9, data.doctype.length - 1);
-      } else if (elm) {
-        elm.remove();
-      }
-      elm = null;
-      global$1.each(headerFragment.getAll('meta'), function (meta) {
-        if (meta.attr('http-equiv') === 'Content-Type') {
-          elm = meta;
-        }
-      });
-      if (data.docencoding) {
-        if (!elm) {
-          elm = new global$3('meta', 1);
-          elm.attr('http-equiv', 'Content-Type');
-          elm.shortEnded = true;
-          addHeadNode(elm);
-        }
-        elm.attr('content', 'text/html; charset=' + data.docencoding);
-      } else if (elm) {
-        elm.remove();
-      }
-      elm = headerFragment.getAll('title')[0];
-      if (data.title) {
-        if (!elm) {
-          elm = new global$3('title', 1);
-          addHeadNode(elm);
-        } else {
-          elm.empty();
-        }
-        elm.append(new global$3('#text', 3)).value = data.title;
-      } else if (elm) {
-        elm.remove();
-      }
-      global$1.each('keywords,description,author,copyright,robots'.split(','), function (name) {
-        var nodes = headerFragment.getAll('meta');
-        var i, meta;
-        var value = data[name];
-        for (i = 0; i < nodes.length; i++) {
-          meta = nodes[i];
-          if (meta.attr('name') === name) {
-            if (value) {
-              meta.attr('content', value);
-            } else {
-              meta.remove();
-            }
-            return;
-          }
-        }
-        if (value) {
-          elm = new global$3('meta', 1);
-          elm.attr('name', name);
-          elm.attr('content', value);
-          elm.shortEnded = true;
-          addHeadNode(elm);
-        }
-      });
-      var currentStyleSheetsMap = {};
-      global$1.each(headerFragment.getAll('link'), function (stylesheet) {
-        if (stylesheet.attr('rel') === 'stylesheet') {
-          currentStyleSheetsMap[stylesheet.attr('href')] = stylesheet;
-        }
-      });
-      global$1.each(data.stylesheets, function (stylesheet) {
-        if (!currentStyleSheetsMap[stylesheet]) {
-          elm = new global$3('link', 1);
-          elm.attr({
-            rel: 'stylesheet',
-            text: 'text/css',
-            href: stylesheet
-          });
-          elm.shortEnded = true;
-          addHeadNode(elm);
-        }
-        delete currentStyleSheetsMap[stylesheet];
-      });
-      global$1.each(currentStyleSheetsMap, function (stylesheet) {
-        stylesheet.remove();
-      });
-      elm = headerFragment.getAll('body')[0];
-      if (elm) {
-        setAttr(elm, 'dir', data.langdir);
-        setAttr(elm, 'style', data.style);
-        setAttr(elm, 'vlink', data.visited_color);
-        setAttr(elm, 'link', data.link_color);
-        setAttr(elm, 'alink', data.active_color);
-        dom.setAttribs(editor.getBody(), {
-          style: data.style,
-          dir: data.dir,
-          vLink: data.visited_color,
-          link: data.link_color,
-          aLink: data.active_color
-        });
-      }
-      elm = headerFragment.getAll('html')[0];
-      if (elm) {
-        setAttr(elm, 'lang', data.langcode);
-        setAttr(elm, 'xml:lang', data.langcode);
-      }
-      if (!headElement.firstChild) {
-        headElement.remove();
-      }
-      var html = global$4({
-        validate: false,
-        indent: true,
-        indent_before: 'head,html,body,meta,title,script,link,style',
-        indent_after: 'head,html,body,meta,title,script,link,style'
-      }).serialize(headerFragment);
-      return html.substring(0, html.indexOf('</body>'));
-    };
-
-    var open = function (editor, headState) {
-      var data = htmlToData(editor, headState.get());
-      var defaultData = {
-        title: '',
-        keywords: '',
-        description: '',
-        robots: '',
-        author: '',
-        docencoding: ''
-      };
-      var initialData = __assign(__assign({}, defaultData), data);
-      editor.windowManager.open({
-        title: 'Metadata and Document Properties',
-        size: 'normal',
-        body: {
-          type: 'panel',
-          items: [
-            {
-              name: 'title',
-              type: 'input',
-              label: 'Title'
-            },
-            {
-              name: 'keywords',
-              type: 'input',
-              label: 'Keywords'
-            },
-            {
-              name: 'description',
-              type: 'input',
-              label: 'Description'
-            },
-            {
-              name: 'robots',
-              type: 'input',
-              label: 'Robots'
-            },
-            {
-              name: 'author',
-              type: 'input',
-              label: 'Author'
-            },
-            {
-              name: 'docencoding',
-              type: 'input',
-              label: 'Encoding'
-            }
-          ]
-        },
-        buttons: [
-          {
-            type: 'cancel',
-            name: 'cancel',
-            text: 'Cancel'
-          },
-          {
-            type: 'submit',
-            name: 'save',
-            text: 'Save',
-            primary: true
-          }
-        ],
-        initialData: initialData,
-        onSubmit: function (api) {
-          var nuData = api.getData();
-          var headHtml = dataToHtml(editor, global$1.extend(data, nuData), headState.get());
-          headState.set(headHtml);
-          api.close();
-        }
-      });
-    };
-
-    var register = function (editor, headState) {
-      editor.addCommand('mceFullPageProperties', function () {
-        open(editor, headState);
-      });
-    };
-
-    var protectHtml = function (protect, html) {
-      global$1.each(protect, function (pattern) {
-        html = html.replace(pattern, function (str) {
-          return '<!--mce:protected ' + escape(str) + '-->';
-        });
-      });
-      return html;
-    };
-    var unprotectHtml = function (html) {
-      return html.replace(/<!--mce:protected ([\s\S]*?)-->/g, function (a, m) {
-        return unescape(m);
-      });
-    };
-
-    var each = global$1.each;
-    var low = function (s) {
-      return s.replace(/<\/?[A-Z]+/g, function (a) {
-        return a.toLowerCase();
-      });
-    };
-    var handleSetContent = function (editor, headState, footState, evt) {
-      var startPos, endPos, content, styles = '';
-      var dom = editor.dom;
-      if (evt.selection) {
-        return;
-      }
-      content = protectHtml(getProtect(editor), evt.content);
-      if (evt.format === 'raw' && headState.get()) {
-        return;
-      }
-      if (evt.source_view && shouldHideInSourceView(editor)) {
-        return;
-      }
-      if (content.length === 0 && !evt.source_view) {
-        content = global$1.trim(headState.get()) + '\n' + global$1.trim(content) + '\n' + global$1.trim(footState.get());
-      }
-      content = content.replace(/<(\/?)BODY/gi, '<$1body');
-      startPos = content.indexOf('<body');
-      if (startPos !== -1) {
-        startPos = content.indexOf('>', startPos);
-        headState.set(low(content.substring(0, startPos + 1)));
-        endPos = content.indexOf('</body', startPos);
-        if (endPos === -1) {
-          endPos = content.length;
-        }
-        evt.content = global$1.trim(content.substring(startPos + 1, endPos));
-        footState.set(low(content.substring(endPos)));
-      } else {
-        headState.set(getDefaultHeader(editor));
-        footState.set('\n</body>\n</html>');
-      }
-      var headerFragment = parseHeader(headState.get());
-      each(headerFragment.getAll('style'), function (node) {
-        if (node.firstChild) {
-          styles += node.firstChild.value;
-        }
-      });
-      var bodyElm = headerFragment.getAll('body')[0];
-      if (bodyElm) {
-        dom.setAttribs(editor.getBody(), {
-          style: bodyElm.attr('style') || '',
-          dir: bodyElm.attr('dir') || '',
-          vLink: bodyElm.attr('vlink') || '',
-          link: bodyElm.attr('link') || '',
-          aLink: bodyElm.attr('alink') || ''
-        });
-      }
-      dom.remove('fullpage_styles');
-      var headElm = editor.getDoc().getElementsByTagName('head')[0];
-      if (styles) {
-        var styleElm = dom.add(headElm, 'style', { id: 'fullpage_styles' });
-        styleElm.appendChild(document.createTextNode(styles));
-      }
-      var currentStyleSheetsMap = {};
-      global$1.each(headElm.getElementsByTagName('link'), function (stylesheet) {
-        if (stylesheet.rel === 'stylesheet' && stylesheet.getAttribute('data-mce-fullpage')) {
-          currentStyleSheetsMap[stylesheet.href] = stylesheet;
-        }
-      });
-      global$1.each(headerFragment.getAll('link'), function (stylesheet) {
-        var href = stylesheet.attr('href');
-        if (!href) {
-          return true;
-        }
-        if (!currentStyleSheetsMap[href] && stylesheet.attr('rel') === 'stylesheet') {
-          dom.add(headElm, 'link', {
-            'rel': 'stylesheet',
-            'text': 'text/css',
-            href: href,
-            'data-mce-fullpage': '1'
-          });
-        }
-        delete currentStyleSheetsMap[href];
-      });
-      global$1.each(currentStyleSheetsMap, function (stylesheet) {
-        stylesheet.parentNode.removeChild(stylesheet);
-      });
-    };
-    var getDefaultHeader = function (editor) {
-      var header = '', value, styles = '';
-      if (getDefaultXmlPi(editor)) {
-        var piEncoding = getDefaultEncoding(editor);
-        header += '<?xml version="1.0" encoding="' + (piEncoding ? piEncoding : 'ISO-8859-1') + '" ?>\n';
-      }
-      header += getDefaultDocType(editor);
-      header += '\n<html>\n<head>\n';
-      if (value = getDefaultTitle(editor)) {
-        header += '<title>' + value + '</title>\n';
-      }
-      if (value = getDefaultEncoding(editor)) {
-        header += '<meta http-equiv="Content-Type" content="text/html; charset=' + value + '" />\n';
-      }
-      if (value = getDefaultFontFamily(editor)) {
-        styles += 'font-family: ' + value + ';';
-      }
-      if (value = getDefaultFontSize(editor)) {
-        styles += 'font-size: ' + value + ';';
-      }
-      if (value = getDefaultTextColor(editor)) {
-        styles += 'color: ' + value + ';';
-      }
-      header += '</head>\n<body' + (styles ? ' style="' + styles + '"' : '') + '>\n';
-      return header;
-    };
-    var handleGetContent = function (editor, head, foot, evt) {
-      if (evt.format === 'html' && !evt.selection && (!evt.source_view || !shouldHideInSourceView(editor))) {
-        evt.content = unprotectHtml(global$1.trim(head) + '\n' + global$1.trim(evt.content) + '\n' + global$1.trim(foot));
-      }
-    };
-    var setup = function (editor, headState, footState) {
-      editor.on('BeforeSetContent', function (evt) {
-        handleSetContent(editor, headState, footState, evt);
-      });
-      editor.on('GetContent', function (evt) {
-        handleGetContent(editor, headState.get(), footState.get(), evt);
-      });
-    };
-
-    var register$1 = function (editor) {
-      editor.ui.registry.addButton('fullpage', {
-        tooltip: 'Metadata and document properties',
-        icon: 'document-properties',
-        onAction: function () {
-          editor.execCommand('mceFullPageProperties');
-        }
-      });
-      editor.ui.registry.addMenuItem('fullpage', {
-        text: 'Metadata and document properties',
-        icon: 'document-properties',
-        onAction: function () {
-          editor.execCommand('mceFullPageProperties');
-        }
-      });
-    };
-
-    function Plugin () {
-      global.add('fullpage', function (editor) {
-        var headState = Cell(''), footState = Cell('');
-        register(editor, headState);
-        register$1(editor);
-        setup(editor, headState, footState);
       });
     }
 
@@ -54050,6 +53505,1472 @@ tinymce.IconManager.add('default', {
         register$1(editor, fullscreenState);
         editor.addShortcut('Meta+Shift+F', '', 'mceFullScreen');
         return get(fullscreenState);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var Cell = function (initial) {
+      var value = initial;
+      var get = function () {
+        return value;
+      };
+      var set = function (v) {
+        value = v;
+      };
+      return {
+        get: get,
+        set: set
+      };
+    };
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var __assign = function () {
+      __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s)
+            if (Object.prototype.hasOwnProperty.call(s, p))
+              t[p] = s[p];
+        }
+        return t;
+      };
+      return __assign.apply(this, arguments);
+    };
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
+
+    var global$2 = tinymce.util.Tools.resolve('tinymce.html.DomParser');
+
+    var global$3 = tinymce.util.Tools.resolve('tinymce.html.Node');
+
+    var global$4 = tinymce.util.Tools.resolve('tinymce.html.Serializer');
+
+    var shouldHideInSourceView = function (editor) {
+      return editor.getParam('fullpage_hide_in_source_view');
+    };
+    var getDefaultXmlPi = function (editor) {
+      return editor.getParam('fullpage_default_xml_pi');
+    };
+    var getDefaultEncoding = function (editor) {
+      return editor.getParam('fullpage_default_encoding');
+    };
+    var getDefaultFontFamily = function (editor) {
+      return editor.getParam('fullpage_default_font_family');
+    };
+    var getDefaultFontSize = function (editor) {
+      return editor.getParam('fullpage_default_font_size');
+    };
+    var getDefaultTextColor = function (editor) {
+      return editor.getParam('fullpage_default_text_color');
+    };
+    var getDefaultTitle = function (editor) {
+      return editor.getParam('fullpage_default_title');
+    };
+    var getDefaultDocType = function (editor) {
+      return editor.getParam('fullpage_default_doctype', '<!DOCTYPE html>');
+    };
+    var getProtect = function (editor) {
+      return editor.getParam('protect');
+    };
+
+    var parseHeader = function (head) {
+      return global$2({
+        validate: false,
+        root_name: '#document'
+      }).parse(head, { format: 'xhtml' });
+    };
+    var htmlToData = function (editor, head) {
+      var headerFragment = parseHeader(head);
+      var data = {};
+      var elm, matches;
+      var getAttr = function (elm, name) {
+        var value = elm.attr(name);
+        return value || '';
+      };
+      data.fontface = getDefaultFontFamily(editor);
+      data.fontsize = getDefaultFontSize(editor);
+      elm = headerFragment.firstChild;
+      if (elm.type === 7) {
+        data.xml_pi = true;
+        matches = /encoding="([^"]+)"/.exec(elm.value);
+        if (matches) {
+          data.docencoding = matches[1];
+        }
+      }
+      elm = headerFragment.getAll('#doctype')[0];
+      if (elm) {
+        data.doctype = '<!DOCTYPE' + elm.value + '>';
+      }
+      elm = headerFragment.getAll('title')[0];
+      if (elm && elm.firstChild) {
+        data.title = elm.firstChild.value;
+      }
+      global$1.each(headerFragment.getAll('meta'), function (meta) {
+        var name = meta.attr('name');
+        var httpEquiv = meta.attr('http-equiv');
+        var matches;
+        if (name) {
+          data[name.toLowerCase()] = meta.attr('content');
+        } else if (httpEquiv === 'Content-Type') {
+          matches = /charset\s*=\s*(.*)\s*/gi.exec(meta.attr('content'));
+          if (matches) {
+            data.docencoding = matches[1];
+          }
+        }
+      });
+      elm = headerFragment.getAll('html')[0];
+      if (elm) {
+        data.langcode = getAttr(elm, 'lang') || getAttr(elm, 'xml:lang');
+      }
+      data.stylesheets = [];
+      global$1.each(headerFragment.getAll('link'), function (link) {
+        if (link.attr('rel') === 'stylesheet') {
+          data.stylesheets.push(link.attr('href'));
+        }
+      });
+      elm = headerFragment.getAll('body')[0];
+      if (elm) {
+        data.langdir = getAttr(elm, 'dir');
+        data.style = getAttr(elm, 'style');
+        data.visited_color = getAttr(elm, 'vlink');
+        data.link_color = getAttr(elm, 'link');
+        data.active_color = getAttr(elm, 'alink');
+      }
+      return data;
+    };
+    var dataToHtml = function (editor, data, head) {
+      var headElement, elm, value;
+      var dom = editor.dom;
+      var setAttr = function (elm, name, value) {
+        elm.attr(name, value ? value : undefined);
+      };
+      var addHeadNode = function (node) {
+        if (headElement.firstChild) {
+          headElement.insert(node, headElement.firstChild);
+        } else {
+          headElement.append(node);
+        }
+      };
+      var headerFragment = parseHeader(head);
+      headElement = headerFragment.getAll('head')[0];
+      if (!headElement) {
+        elm = headerFragment.getAll('html')[0];
+        headElement = new global$3('head', 1);
+        if (elm.firstChild) {
+          elm.insert(headElement, elm.firstChild, true);
+        } else {
+          elm.append(headElement);
+        }
+      }
+      elm = headerFragment.firstChild;
+      if (data.xml_pi) {
+        value = 'version="1.0"';
+        if (data.docencoding) {
+          value += ' encoding="' + data.docencoding + '"';
+        }
+        if (elm.type !== 7) {
+          elm = new global$3('xml', 7);
+          headerFragment.insert(elm, headerFragment.firstChild, true);
+        }
+        elm.value = value;
+      } else if (elm && elm.type === 7) {
+        elm.remove();
+      }
+      elm = headerFragment.getAll('#doctype')[0];
+      if (data.doctype) {
+        if (!elm) {
+          elm = new global$3('#doctype', 10);
+          if (data.xml_pi) {
+            headerFragment.insert(elm, headerFragment.firstChild);
+          } else {
+            addHeadNode(elm);
+          }
+        }
+        elm.value = data.doctype.substring(9, data.doctype.length - 1);
+      } else if (elm) {
+        elm.remove();
+      }
+      elm = null;
+      global$1.each(headerFragment.getAll('meta'), function (meta) {
+        if (meta.attr('http-equiv') === 'Content-Type') {
+          elm = meta;
+        }
+      });
+      if (data.docencoding) {
+        if (!elm) {
+          elm = new global$3('meta', 1);
+          elm.attr('http-equiv', 'Content-Type');
+          elm.shortEnded = true;
+          addHeadNode(elm);
+        }
+        elm.attr('content', 'text/html; charset=' + data.docencoding);
+      } else if (elm) {
+        elm.remove();
+      }
+      elm = headerFragment.getAll('title')[0];
+      if (data.title) {
+        if (!elm) {
+          elm = new global$3('title', 1);
+          addHeadNode(elm);
+        } else {
+          elm.empty();
+        }
+        elm.append(new global$3('#text', 3)).value = data.title;
+      } else if (elm) {
+        elm.remove();
+      }
+      global$1.each('keywords,description,author,copyright,robots'.split(','), function (name) {
+        var nodes = headerFragment.getAll('meta');
+        var i, meta;
+        var value = data[name];
+        for (i = 0; i < nodes.length; i++) {
+          meta = nodes[i];
+          if (meta.attr('name') === name) {
+            if (value) {
+              meta.attr('content', value);
+            } else {
+              meta.remove();
+            }
+            return;
+          }
+        }
+        if (value) {
+          elm = new global$3('meta', 1);
+          elm.attr('name', name);
+          elm.attr('content', value);
+          elm.shortEnded = true;
+          addHeadNode(elm);
+        }
+      });
+      var currentStyleSheetsMap = {};
+      global$1.each(headerFragment.getAll('link'), function (stylesheet) {
+        if (stylesheet.attr('rel') === 'stylesheet') {
+          currentStyleSheetsMap[stylesheet.attr('href')] = stylesheet;
+        }
+      });
+      global$1.each(data.stylesheets, function (stylesheet) {
+        if (!currentStyleSheetsMap[stylesheet]) {
+          elm = new global$3('link', 1);
+          elm.attr({
+            rel: 'stylesheet',
+            text: 'text/css',
+            href: stylesheet
+          });
+          elm.shortEnded = true;
+          addHeadNode(elm);
+        }
+        delete currentStyleSheetsMap[stylesheet];
+      });
+      global$1.each(currentStyleSheetsMap, function (stylesheet) {
+        stylesheet.remove();
+      });
+      elm = headerFragment.getAll('body')[0];
+      if (elm) {
+        setAttr(elm, 'dir', data.langdir);
+        setAttr(elm, 'style', data.style);
+        setAttr(elm, 'vlink', data.visited_color);
+        setAttr(elm, 'link', data.link_color);
+        setAttr(elm, 'alink', data.active_color);
+        dom.setAttribs(editor.getBody(), {
+          style: data.style,
+          dir: data.dir,
+          vLink: data.visited_color,
+          link: data.link_color,
+          aLink: data.active_color
+        });
+      }
+      elm = headerFragment.getAll('html')[0];
+      if (elm) {
+        setAttr(elm, 'lang', data.langcode);
+        setAttr(elm, 'xml:lang', data.langcode);
+      }
+      if (!headElement.firstChild) {
+        headElement.remove();
+      }
+      var html = global$4({
+        validate: false,
+        indent: true,
+        indent_before: 'head,html,body,meta,title,script,link,style',
+        indent_after: 'head,html,body,meta,title,script,link,style'
+      }).serialize(headerFragment);
+      return html.substring(0, html.indexOf('</body>'));
+    };
+
+    var open = function (editor, headState) {
+      var data = htmlToData(editor, headState.get());
+      var defaultData = {
+        title: '',
+        keywords: '',
+        description: '',
+        robots: '',
+        author: '',
+        docencoding: ''
+      };
+      var initialData = __assign(__assign({}, defaultData), data);
+      editor.windowManager.open({
+        title: 'Metadata and Document Properties',
+        size: 'normal',
+        body: {
+          type: 'panel',
+          items: [
+            {
+              name: 'title',
+              type: 'input',
+              label: 'Title'
+            },
+            {
+              name: 'keywords',
+              type: 'input',
+              label: 'Keywords'
+            },
+            {
+              name: 'description',
+              type: 'input',
+              label: 'Description'
+            },
+            {
+              name: 'robots',
+              type: 'input',
+              label: 'Robots'
+            },
+            {
+              name: 'author',
+              type: 'input',
+              label: 'Author'
+            },
+            {
+              name: 'docencoding',
+              type: 'input',
+              label: 'Encoding'
+            }
+          ]
+        },
+        buttons: [
+          {
+            type: 'cancel',
+            name: 'cancel',
+            text: 'Cancel'
+          },
+          {
+            type: 'submit',
+            name: 'save',
+            text: 'Save',
+            primary: true
+          }
+        ],
+        initialData: initialData,
+        onSubmit: function (api) {
+          var nuData = api.getData();
+          var headHtml = dataToHtml(editor, global$1.extend(data, nuData), headState.get());
+          headState.set(headHtml);
+          api.close();
+        }
+      });
+    };
+
+    var register = function (editor, headState) {
+      editor.addCommand('mceFullPageProperties', function () {
+        open(editor, headState);
+      });
+    };
+
+    var protectHtml = function (protect, html) {
+      global$1.each(protect, function (pattern) {
+        html = html.replace(pattern, function (str) {
+          return '<!--mce:protected ' + escape(str) + '-->';
+        });
+      });
+      return html;
+    };
+    var unprotectHtml = function (html) {
+      return html.replace(/<!--mce:protected ([\s\S]*?)-->/g, function (a, m) {
+        return unescape(m);
+      });
+    };
+
+    var each = global$1.each;
+    var low = function (s) {
+      return s.replace(/<\/?[A-Z]+/g, function (a) {
+        return a.toLowerCase();
+      });
+    };
+    var handleSetContent = function (editor, headState, footState, evt) {
+      var startPos, endPos, content, styles = '';
+      var dom = editor.dom;
+      if (evt.selection) {
+        return;
+      }
+      content = protectHtml(getProtect(editor), evt.content);
+      if (evt.format === 'raw' && headState.get()) {
+        return;
+      }
+      if (evt.source_view && shouldHideInSourceView(editor)) {
+        return;
+      }
+      if (content.length === 0 && !evt.source_view) {
+        content = global$1.trim(headState.get()) + '\n' + global$1.trim(content) + '\n' + global$1.trim(footState.get());
+      }
+      content = content.replace(/<(\/?)BODY/gi, '<$1body');
+      startPos = content.indexOf('<body');
+      if (startPos !== -1) {
+        startPos = content.indexOf('>', startPos);
+        headState.set(low(content.substring(0, startPos + 1)));
+        endPos = content.indexOf('</body', startPos);
+        if (endPos === -1) {
+          endPos = content.length;
+        }
+        evt.content = global$1.trim(content.substring(startPos + 1, endPos));
+        footState.set(low(content.substring(endPos)));
+      } else {
+        headState.set(getDefaultHeader(editor));
+        footState.set('\n</body>\n</html>');
+      }
+      var headerFragment = parseHeader(headState.get());
+      each(headerFragment.getAll('style'), function (node) {
+        if (node.firstChild) {
+          styles += node.firstChild.value;
+        }
+      });
+      var bodyElm = headerFragment.getAll('body')[0];
+      if (bodyElm) {
+        dom.setAttribs(editor.getBody(), {
+          style: bodyElm.attr('style') || '',
+          dir: bodyElm.attr('dir') || '',
+          vLink: bodyElm.attr('vlink') || '',
+          link: bodyElm.attr('link') || '',
+          aLink: bodyElm.attr('alink') || ''
+        });
+      }
+      dom.remove('fullpage_styles');
+      var headElm = editor.getDoc().getElementsByTagName('head')[0];
+      if (styles) {
+        var styleElm = dom.add(headElm, 'style', { id: 'fullpage_styles' });
+        styleElm.appendChild(document.createTextNode(styles));
+      }
+      var currentStyleSheetsMap = {};
+      global$1.each(headElm.getElementsByTagName('link'), function (stylesheet) {
+        if (stylesheet.rel === 'stylesheet' && stylesheet.getAttribute('data-mce-fullpage')) {
+          currentStyleSheetsMap[stylesheet.href] = stylesheet;
+        }
+      });
+      global$1.each(headerFragment.getAll('link'), function (stylesheet) {
+        var href = stylesheet.attr('href');
+        if (!href) {
+          return true;
+        }
+        if (!currentStyleSheetsMap[href] && stylesheet.attr('rel') === 'stylesheet') {
+          dom.add(headElm, 'link', {
+            'rel': 'stylesheet',
+            'text': 'text/css',
+            href: href,
+            'data-mce-fullpage': '1'
+          });
+        }
+        delete currentStyleSheetsMap[href];
+      });
+      global$1.each(currentStyleSheetsMap, function (stylesheet) {
+        stylesheet.parentNode.removeChild(stylesheet);
+      });
+    };
+    var getDefaultHeader = function (editor) {
+      var header = '', value, styles = '';
+      if (getDefaultXmlPi(editor)) {
+        var piEncoding = getDefaultEncoding(editor);
+        header += '<?xml version="1.0" encoding="' + (piEncoding ? piEncoding : 'ISO-8859-1') + '" ?>\n';
+      }
+      header += getDefaultDocType(editor);
+      header += '\n<html>\n<head>\n';
+      if (value = getDefaultTitle(editor)) {
+        header += '<title>' + value + '</title>\n';
+      }
+      if (value = getDefaultEncoding(editor)) {
+        header += '<meta http-equiv="Content-Type" content="text/html; charset=' + value + '" />\n';
+      }
+      if (value = getDefaultFontFamily(editor)) {
+        styles += 'font-family: ' + value + ';';
+      }
+      if (value = getDefaultFontSize(editor)) {
+        styles += 'font-size: ' + value + ';';
+      }
+      if (value = getDefaultTextColor(editor)) {
+        styles += 'color: ' + value + ';';
+      }
+      header += '</head>\n<body' + (styles ? ' style="' + styles + '"' : '') + '>\n';
+      return header;
+    };
+    var handleGetContent = function (editor, head, foot, evt) {
+      if (evt.format === 'html' && !evt.selection && (!evt.source_view || !shouldHideInSourceView(editor))) {
+        evt.content = unprotectHtml(global$1.trim(head) + '\n' + global$1.trim(evt.content) + '\n' + global$1.trim(foot));
+      }
+    };
+    var setup = function (editor, headState, footState) {
+      editor.on('BeforeSetContent', function (evt) {
+        handleSetContent(editor, headState, footState, evt);
+      });
+      editor.on('GetContent', function (evt) {
+        handleGetContent(editor, headState.get(), footState.get(), evt);
+      });
+    };
+
+    var register$1 = function (editor) {
+      editor.ui.registry.addButton('fullpage', {
+        tooltip: 'Metadata and document properties',
+        icon: 'document-properties',
+        onAction: function () {
+          editor.execCommand('mceFullPageProperties');
+        }
+      });
+      editor.ui.registry.addMenuItem('fullpage', {
+        text: 'Metadata and document properties',
+        icon: 'document-properties',
+        onAction: function () {
+          editor.execCommand('mceFullPageProperties');
+        }
+      });
+    };
+
+    function Plugin () {
+      global.add('fullpage', function (editor) {
+        var headState = Cell(''), footState = Cell('');
+        register(editor, headState);
+        register$1(editor);
+        setup(editor, headState, footState);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var Cell = function (initial) {
+      var value = initial;
+      var get = function () {
+        return value;
+      };
+      var set = function (v) {
+        value = v;
+      };
+      return {
+        get: get,
+        set: set
+      };
+    };
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var get = function (customTabs) {
+      var addTab = function (spec) {
+        var currentCustomTabs = customTabs.get();
+        currentCustomTabs[spec.name] = spec;
+        customTabs.set(currentCustomTabs);
+      };
+      return { addTab: addTab };
+    };
+
+    var register = function (editor, dialogOpener) {
+      editor.addCommand('mceHelp', dialogOpener);
+    };
+
+    var register$1 = function (editor, dialogOpener) {
+      editor.ui.registry.addButton('help', {
+        icon: 'help',
+        tooltip: 'Help',
+        onAction: dialogOpener
+      });
+      editor.ui.registry.addMenuItem('help', {
+        text: 'Help',
+        icon: 'help',
+        shortcut: 'Alt+0',
+        onAction: dialogOpener
+      });
+    };
+
+    var __assign = function () {
+      __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s)
+            if (Object.prototype.hasOwnProperty.call(s, p))
+              t[p] = s[p];
+        }
+        return t;
+      };
+      return __assign.apply(this, arguments);
+    };
+
+    var noop = function () {
+    };
+    var constant = function (value) {
+      return function () {
+        return value;
+      };
+    };
+    var never = constant(false);
+    var always = constant(true);
+
+    var none = function () {
+      return NONE;
+    };
+    var NONE = function () {
+      var eq = function (o) {
+        return o.isNone();
+      };
+      var call = function (thunk) {
+        return thunk();
+      };
+      var id = function (n) {
+        return n;
+      };
+      var me = {
+        fold: function (n, _s) {
+          return n();
+        },
+        is: never,
+        isSome: never,
+        isNone: always,
+        getOr: id,
+        getOrThunk: call,
+        getOrDie: function (msg) {
+          throw new Error(msg || 'error: getOrDie called on none.');
+        },
+        getOrNull: constant(null),
+        getOrUndefined: constant(undefined),
+        or: id,
+        orThunk: call,
+        map: none,
+        each: noop,
+        bind: none,
+        exists: never,
+        forall: always,
+        filter: none,
+        equals: eq,
+        equals_: eq,
+        toArray: function () {
+          return [];
+        },
+        toString: constant('none()')
+      };
+      return me;
+    }();
+    var some = function (a) {
+      var constant_a = constant(a);
+      var self = function () {
+        return me;
+      };
+      var bind = function (f) {
+        return f(a);
+      };
+      var me = {
+        fold: function (n, s) {
+          return s(a);
+        },
+        is: function (v) {
+          return a === v;
+        },
+        isSome: always,
+        isNone: never,
+        getOr: constant_a,
+        getOrThunk: constant_a,
+        getOrDie: constant_a,
+        getOrNull: constant_a,
+        getOrUndefined: constant_a,
+        or: self,
+        orThunk: self,
+        map: function (f) {
+          return some(f(a));
+        },
+        each: function (f) {
+          f(a);
+        },
+        bind: bind,
+        exists: bind,
+        forall: bind,
+        filter: function (f) {
+          return f(a) ? me : NONE;
+        },
+        toArray: function () {
+          return [a];
+        },
+        toString: function () {
+          return 'some(' + a + ')';
+        },
+        equals: function (o) {
+          return o.is(a);
+        },
+        equals_: function (o, elementEq) {
+          return o.fold(never, function (b) {
+            return elementEq(a, b);
+          });
+        }
+      };
+      return me;
+    };
+    var from = function (value) {
+      return value === null || value === undefined ? NONE : some(value);
+    };
+    var Optional = {
+      some: some,
+      none: none,
+      from: from
+    };
+
+    var nativeIndexOf = Array.prototype.indexOf;
+    var rawIndexOf = function (ts, t) {
+      return nativeIndexOf.call(ts, t);
+    };
+    var contains = function (xs, x) {
+      return rawIndexOf(xs, x) > -1;
+    };
+    var map = function (xs, f) {
+      var len = xs.length;
+      var r = new Array(len);
+      for (var i = 0; i < len; i++) {
+        var x = xs[i];
+        r[i] = f(x, i);
+      }
+      return r;
+    };
+    var filter = function (xs, pred) {
+      var r = [];
+      for (var i = 0, len = xs.length; i < len; i++) {
+        var x = xs[i];
+        if (pred(x, i)) {
+          r.push(x);
+        }
+      }
+      return r;
+    };
+    var findUntil = function (xs, pred, until) {
+      for (var i = 0, len = xs.length; i < len; i++) {
+        var x = xs[i];
+        if (pred(x, i)) {
+          return Optional.some(x);
+        } else if (until(x, i)) {
+          break;
+        }
+      }
+      return Optional.none();
+    };
+    var find = function (xs, pred) {
+      return findUntil(xs, pred, never);
+    };
+
+    var keys = Object.keys;
+    var hasOwnProperty = Object.hasOwnProperty;
+    var get$1 = function (obj, key) {
+      return has(obj, key) ? Optional.from(obj[key]) : Optional.none();
+    };
+    var has = function (obj, key) {
+      return hasOwnProperty.call(obj, key);
+    };
+
+    var cat = function (arr) {
+      var r = [];
+      var push = function (x) {
+        r.push(x);
+      };
+      for (var i = 0; i < arr.length; i++) {
+        arr[i].each(push);
+      }
+      return r;
+    };
+
+    var getHelpTabs = function (editor) {
+      return Optional.from(editor.getParam('help_tabs'));
+    };
+    var getForcedPlugins = function (editor) {
+      return editor.getParam('forced_plugins');
+    };
+
+    var description = '<h1>Editor UI keyboard navigation</h1>\n\n<h2>Activating keyboard navigation</h2>\n\n<p>The sections of the outer UI of the editor - the menubar, toolbar, sidebar and footer - are all keyboard navigable. As such, there are multiple ways to activate keyboard navigation:</p>\n<ul>\n  <li>Focus the menubar: Alt + F9 (Windows) or &#x2325;F9 (MacOS)</li>\n  <li>Focus the toolbar: Alt + F10 (Windows) or &#x2325;F10 (MacOS)</li>\n  <li>Focus the footer: Alt + F11 (Windows) or &#x2325;F11 (MacOS)</li>\n</ul>\n\n<p>Focusing the menubar or toolbar will start keyboard navigation at the first item in the menubar or toolbar, which will be highlighted with a gray background. Focusing the footer will start keyboard navigation at the first item in the element path, which will be highlighted with an underline. </p>\n\n<h2>Moving between UI sections</h2>\n\n<p>When keyboard navigation is active, pressing tab will move the focus to the next major section of the UI, where applicable. These sections are:</p>\n<ul>\n  <li>the menubar</li>\n  <li>each group of the toolbar </li>\n  <li>the sidebar</li>\n  <li>the element path in the footer </li>\n  <li>the wordcount toggle button in the footer </li>\n  <li>the branding link in the footer </li>\n  <li>the editor resize handle in the footer</li>\n</ul>\n\n<p>Pressing shift + tab will move backwards through the same sections, except when moving from the footer to the toolbar. Focusing the element path then pressing shift + tab will move focus to the first toolbar group, not the last.</p>\n\n<h2>Moving within UI sections</h2>\n\n<p>Keyboard navigation within UI sections can usually be achieved using the left and right arrow keys. This includes:</p>\n<ul>\n  <li>moving between menus in the menubar</li>\n  <li>moving between buttons in a toolbar group</li>\n  <li>moving between items in the element path</li>\n</ul>\n\n<p>In all these UI sections, keyboard navigation will cycle within the section. For example, focusing the last button in a toolbar group then pressing right arrow will move focus to the first item in the same toolbar group. </p>\n\n<h1>Executing buttons</h1>\n\n<p>To execute a button, navigate the selection to the desired button and hit space or enter.</p>\n\n<h1>Opening, navigating and closing menus</h1>\n\n<p>When focusing a menubar button or a toolbar button with a menu, pressing space, enter or down arrow will open the menu. When the menu opens the first item will be selected. To move up or down the menu, press the up or down arrow key respectively. This is the same for submenus, which can also be opened and closed using the left and right arrow keys.</p>\n\n<p>To close any active menu, hit the escape key. When a menu is closed the selection will be restored to its previous selection. This also works for closing submenus.</p>\n\n<h1>Context toolbars and menus</h1>\n\n<p>To focus an open context toolbar such as the table context toolbar, press Ctrl + F9 (Windows) or &#x2303;F9 (MacOS).</p>\n\n<p>Context toolbar navigation is the same as toolbar navigation, and context menu navigation is the same as standard menu navigation.</p>\n\n<h1>Dialog navigation</h1>\n\n<p>There are two types of dialog UIs in TinyMCE: tabbed dialogs and non-tabbed dialogs.</p>\n\n<p>When a non-tabbed dialog is opened, the first interactive component in the dialog will be focused. Users can navigate between interactive components by pressing tab. This includes any footer buttons. Navigation will cycle back to the first dialog component if tab is pressed while focusing the last component in the dialog. Pressing shift + tab will navigate backwards.</p>\n\n<p>When a tabbed dialog is opened, the first button in the tab menu is focused. Pressing tab will navigate to the first interactive component in that tab, and will cycle through the tab\u2019s components, the footer buttons, then back to the tab button. To switch to another tab, focus the tab button for the current tab, then use the arrow keys to cycle through the tab buttons.</p>';
+    var tab = function () {
+      var body = {
+        type: 'htmlpanel',
+        presets: 'document',
+        html: description
+      };
+      return {
+        name: 'keyboardnav',
+        title: 'Keyboard Navigation',
+        items: [body]
+      };
+    };
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.Env');
+
+    var convertText = function (source) {
+      var mac = {
+        alt: '&#x2325;',
+        ctrl: '&#x2303;',
+        shift: '&#x21E7;',
+        meta: '&#x2318;',
+        access: '&#x2303;&#x2325;'
+      };
+      var other = {
+        meta: 'Ctrl ',
+        access: 'Shift + Alt '
+      };
+      var replace = global$1.mac ? mac : other;
+      var shortcut = source.split('+');
+      var updated = map(shortcut, function (segment) {
+        var search = segment.toLowerCase().trim();
+        return has(replace, search) ? replace[search] : segment;
+      });
+      return global$1.mac ? updated.join('').replace(/\s/, '') : updated.join('+');
+    };
+
+    var shortcuts = [
+      {
+        shortcuts: ['Meta + B'],
+        action: 'Bold'
+      },
+      {
+        shortcuts: ['Meta + I'],
+        action: 'Italic'
+      },
+      {
+        shortcuts: ['Meta + U'],
+        action: 'Underline'
+      },
+      {
+        shortcuts: ['Meta + A'],
+        action: 'Select all'
+      },
+      {
+        shortcuts: [
+          'Meta + Y',
+          'Meta + Shift + Z'
+        ],
+        action: 'Redo'
+      },
+      {
+        shortcuts: ['Meta + Z'],
+        action: 'Undo'
+      },
+      {
+        shortcuts: ['Access + 1'],
+        action: 'Heading 1'
+      },
+      {
+        shortcuts: ['Access + 2'],
+        action: 'Heading 2'
+      },
+      {
+        shortcuts: ['Access + 3'],
+        action: 'Heading 3'
+      },
+      {
+        shortcuts: ['Access + 4'],
+        action: 'Heading 4'
+      },
+      {
+        shortcuts: ['Access + 5'],
+        action: 'Heading 5'
+      },
+      {
+        shortcuts: ['Access + 6'],
+        action: 'Heading 6'
+      },
+      {
+        shortcuts: ['Access + 7'],
+        action: 'Paragraph'
+      },
+      {
+        shortcuts: ['Access + 8'],
+        action: 'Div'
+      },
+      {
+        shortcuts: ['Access + 9'],
+        action: 'Address'
+      },
+      {
+        shortcuts: ['Alt + 0'],
+        action: 'Open help dialog'
+      },
+      {
+        shortcuts: ['Alt + F9'],
+        action: 'Focus to menubar'
+      },
+      {
+        shortcuts: ['Alt + F10'],
+        action: 'Focus to toolbar'
+      },
+      {
+        shortcuts: ['Alt + F11'],
+        action: 'Focus to element path'
+      },
+      {
+        shortcuts: ['Ctrl + F9'],
+        action: 'Focus to contextual toolbar'
+      },
+      {
+        shortcuts: ['Shift + Enter'],
+        action: 'Open popup menu for split buttons'
+      },
+      {
+        shortcuts: ['Meta + K'],
+        action: 'Insert link (if link plugin activated)'
+      },
+      {
+        shortcuts: ['Meta + S'],
+        action: 'Save (if save plugin activated)'
+      },
+      {
+        shortcuts: ['Meta + F'],
+        action: 'Find (if searchreplace plugin activated)'
+      },
+      {
+        shortcuts: ['Meta + Shift + F'],
+        action: 'Switch to or from fullscreen mode'
+      }
+    ];
+
+    var tab$1 = function () {
+      var shortcutList = map(shortcuts, function (shortcut) {
+        var shortcutText = map(shortcut.shortcuts, convertText).join(' or ');
+        return [
+          shortcut.action,
+          shortcutText
+        ];
+      });
+      var tablePanel = {
+        type: 'table',
+        header: [
+          'Action',
+          'Shortcut'
+        ],
+        cells: shortcutList
+      };
+      return {
+        name: 'shortcuts',
+        title: 'Handy Shortcuts',
+        items: [tablePanel]
+      };
+    };
+
+    var global$2 = tinymce.util.Tools.resolve('tinymce.util.I18n');
+
+    var premiumType = 'premium';
+    var openSourceType = 'opensource';
+    var urls = map([
+      {
+        key: 'advlist',
+        name: 'Advanced List'
+      },
+      {
+        key: 'anchor',
+        name: 'Anchor'
+      },
+      {
+        key: 'autolink',
+        name: 'Autolink'
+      },
+      {
+        key: 'autoresize',
+        name: 'Autoresize'
+      },
+      {
+        key: 'autosave',
+        name: 'Autosave'
+      },
+      {
+        key: 'bbcode',
+        name: 'BBCode'
+      },
+      {
+        key: 'charmap',
+        name: 'Character Map'
+      },
+      {
+        key: 'code',
+        name: 'Code'
+      },
+      {
+        key: 'codesample',
+        name: 'Code Sample'
+      },
+      {
+        key: 'colorpicker',
+        name: 'Color Picker'
+      },
+      {
+        key: 'directionality',
+        name: 'Directionality'
+      },
+      {
+        key: 'emoticons',
+        name: 'Emoticons'
+      },
+      {
+        key: 'fullpage',
+        name: 'Full Page'
+      },
+      {
+        key: 'fullscreen',
+        name: 'Full Screen'
+      },
+      {
+        key: 'help',
+        name: 'Help'
+      },
+      {
+        key: 'hr',
+        name: 'Horizontal Rule'
+      },
+      {
+        key: 'image',
+        name: 'Image'
+      },
+      {
+        key: 'imagetools',
+        name: 'Image Tools'
+      },
+      {
+        key: 'importcss',
+        name: 'Import CSS'
+      },
+      {
+        key: 'insertdatetime',
+        name: 'Insert Date/Time'
+      },
+      {
+        key: 'legacyoutput',
+        name: 'Legacy Output'
+      },
+      {
+        key: 'link',
+        name: 'Link'
+      },
+      {
+        key: 'lists',
+        name: 'Lists'
+      },
+      {
+        key: 'media',
+        name: 'Media'
+      },
+      {
+        key: 'nonbreaking',
+        name: 'Nonbreaking'
+      },
+      {
+        key: 'noneditable',
+        name: 'Noneditable'
+      },
+      {
+        key: 'pagebreak',
+        name: 'Page Break'
+      },
+      {
+        key: 'paste',
+        name: 'Paste'
+      },
+      {
+        key: 'preview',
+        name: 'Preview'
+      },
+      {
+        key: 'print',
+        name: 'Print'
+      },
+      {
+        key: 'save',
+        name: 'Save'
+      },
+      {
+        key: 'searchreplace',
+        name: 'Search and Replace'
+      },
+      {
+        key: 'spellchecker',
+        name: 'Spell Checker'
+      },
+      {
+        key: 'tabfocus',
+        name: 'Tab Focus'
+      },
+      {
+        key: 'table',
+        name: 'Table'
+      },
+      {
+        key: 'template',
+        name: 'Template'
+      },
+      {
+        key: 'textcolor',
+        name: 'Text Color'
+      },
+      {
+        key: 'textpattern',
+        name: 'Text Pattern'
+      },
+      {
+        key: 'toc',
+        name: 'Table of Contents'
+      },
+      {
+        key: 'visualblocks',
+        name: 'Visual Blocks'
+      },
+      {
+        key: 'visualchars',
+        name: 'Visual Characters'
+      },
+      {
+        key: 'wordcount',
+        name: 'Word Count'
+      },
+      {
+        key: 'advcode',
+        name: 'Advanced Code Editor*',
+        type: premiumType
+      },
+      {
+        key: 'formatpainter',
+        name: 'Format Painter*',
+        type: premiumType
+      },
+      {
+        key: 'powerpaste',
+        name: 'PowerPaste*',
+        type: premiumType
+      },
+      {
+        key: 'tinydrive',
+        name: 'Tiny Drive*',
+        type: premiumType
+      },
+      {
+        key: 'tinymcespellchecker',
+        name: 'Spell Checker Pro*',
+        type: premiumType
+      },
+      {
+        key: 'a11ychecker',
+        name: 'Accessibility Checker*',
+        type: premiumType
+      },
+      {
+        key: 'linkchecker',
+        name: 'Link Checker*',
+        type: premiumType
+      },
+      {
+        key: 'mentions',
+        name: 'Mentions*',
+        type: premiumType
+      },
+      {
+        key: 'mediaembed',
+        name: 'Enhanced Media Embed*',
+        type: premiumType
+      },
+      {
+        key: 'checklist',
+        name: 'Checklist*',
+        type: premiumType
+      },
+      {
+        key: 'casechange',
+        name: 'Case Change*',
+        type: premiumType
+      },
+      {
+        key: 'permanentpen',
+        name: 'Permanent Pen*',
+        type: premiumType
+      },
+      {
+        key: 'pageembed',
+        name: 'Page Embed*',
+        type: premiumType
+      },
+      {
+        key: 'tinycomments',
+        name: 'Tiny Comments*',
+        type: premiumType,
+        slug: 'comments'
+      },
+      {
+        key: 'advtable',
+        name: 'Advanced Tables*',
+        type: premiumType
+      },
+      {
+        key: 'autocorrect',
+        name: 'Autocorrect*',
+        type: premiumType
+      },
+      {
+        key: 'export',
+        name: 'Export*',
+        type: premiumType
+      }
+    ], function (item) {
+      return __assign(__assign({}, item), {
+        type: item.type || openSourceType,
+        slug: item.slug || item.key
+      });
+    });
+
+    var tab$2 = function (editor) {
+      var availablePlugins = function () {
+        var premiumPlugins = [
+          'Accessibility Checker',
+          'Advanced Code Editor',
+          'Advanced Tables',
+          'Case Change',
+          'Checklist',
+          'Export',
+          'Tiny Comments',
+          'Tiny Drive',
+          'Enhanced Media Embed',
+          'Format Painter',
+          'Link Checker',
+          'Mentions',
+          'MoxieManager',
+          'Page Embed',
+          'Permanent Pen',
+          'PowerPaste',
+          'Spell Checker Pro'
+        ];
+        var premiumPluginList = map(premiumPlugins, function (plugin) {
+          return '<li>' + global$2.translate(plugin) + '</li>';
+        }).join('');
+        return '<div data-mce-tabstop="1" tabindex="-1">' + '<p><b>' + global$2.translate('Premium plugins:') + '</b></p>' + '<ul>' + premiumPluginList + '<li class="tox-help__more-link" "><a href="https://www.tiny.cloud/pricing/?utm_campaign=editor_referral&utm_medium=help_dialog&utm_source=tinymce" target="_blank">' + global$2.translate('Learn more...') + '</a></li>' + '</ul>' + '</div>';
+      };
+      var makeLink = function (p) {
+        return '<a href="' + p.url + '" target="_blank" rel="noopener">' + p.name + '</a>';
+      };
+      var maybeUrlize = function (editor, key) {
+        return find(urls, function (x) {
+          return x.key === key;
+        }).fold(function () {
+          var getMetadata = editor.plugins[key].getMetadata;
+          return typeof getMetadata === 'function' ? makeLink(getMetadata()) : key;
+        }, function (x) {
+          return makeLink({
+            name: x.name,
+            url: 'https://www.tiny.cloud/docs/plugins/' + x.type + '/' + x.slug
+          });
+        });
+      };
+      var getPluginKeys = function (editor) {
+        var keys$1 = keys(editor.plugins);
+        var forced_plugins = getForcedPlugins(editor);
+        return forced_plugins === undefined ? keys$1 : filter(keys$1, function (k) {
+          return !contains(forced_plugins, k);
+        });
+      };
+      var pluginLister = function (editor) {
+        var pluginKeys = getPluginKeys(editor);
+        var pluginLis = map(pluginKeys, function (key) {
+          return '<li>' + maybeUrlize(editor, key) + '</li>';
+        });
+        var count = pluginLis.length;
+        var pluginsString = pluginLis.join('');
+        var html = '<p><b>' + global$2.translate([
+          'Plugins installed ({0}):',
+          count
+        ]) + '</b></p>' + '<ul>' + pluginsString + '</ul>';
+        return html;
+      };
+      var installedPlugins = function (editor) {
+        if (editor == null) {
+          return '';
+        }
+        return '<div data-mce-tabstop="1" tabindex="-1">' + pluginLister(editor) + '</div>';
+      };
+      var htmlPanel = {
+        type: 'htmlpanel',
+        presets: 'document',
+        html: [
+          installedPlugins(editor),
+          availablePlugins()
+        ].join('')
+      };
+      return {
+        name: 'plugins',
+        title: 'Plugins',
+        items: [htmlPanel]
+      };
+    };
+
+    var global$3 = tinymce.util.Tools.resolve('tinymce.EditorManager');
+
+    var tab$3 = function () {
+      var getVersion = function (major, minor) {
+        return major.indexOf('@') === 0 ? 'X.X.X' : major + '.' + minor;
+      };
+      var version = getVersion(global$3.majorVersion, global$3.minorVersion);
+      var changeLogLink = '<a href="https://www.tiny.cloud/docs/changelog/?utm_campaign=editor_referral&utm_medium=help_dialog&utm_source=tinymce" target="_blank">TinyMCE ' + version + '</a>';
+      var htmlPanel = {
+        type: 'htmlpanel',
+        html: '<p>' + global$2.translate([
+          'You are using {0}',
+          changeLogLink
+        ]) + '</p>',
+        presets: 'document'
+      };
+      return {
+        name: 'versions',
+        title: 'Version',
+        items: [htmlPanel]
+      };
+    };
+
+    var parseHelpTabsSetting = function (tabsFromSettings, tabs) {
+      var newTabs = {};
+      var names = map(tabsFromSettings, function (t) {
+        if (typeof t === 'string') {
+          if (has(tabs, t)) {
+            newTabs[t] = tabs[t];
+          }
+          return t;
+        } else {
+          newTabs[t.name] = t;
+          return t.name;
+        }
+      });
+      return {
+        tabs: newTabs,
+        names: names
+      };
+    };
+    var getNamesFromTabs = function (tabs) {
+      var names = keys(tabs);
+      var idx = names.indexOf('versions');
+      if (idx !== -1) {
+        names.splice(idx, 1);
+        names.push('versions');
+      }
+      return {
+        tabs: tabs,
+        names: names
+      };
+    };
+    var parseCustomTabs = function (editor, customTabs) {
+      var _a;
+      var shortcuts = tab$1();
+      var nav = tab();
+      var plugins = tab$2(editor);
+      var versions = tab$3();
+      var tabs = __assign((_a = {}, _a[shortcuts.name] = shortcuts, _a[nav.name] = nav, _a[plugins.name] = plugins, _a[versions.name] = versions, _a), customTabs.get());
+      return getHelpTabs(editor).fold(function () {
+        return getNamesFromTabs(tabs);
+      }, function (tabsFromSettings) {
+        return parseHelpTabsSetting(tabsFromSettings, tabs);
+      });
+    };
+    var init = function (editor, customTabs) {
+      return function () {
+        var _a = parseCustomTabs(editor, customTabs), tabs = _a.tabs, names = _a.names;
+        var foundTabs = map(names, function (name) {
+          return get$1(tabs, name);
+        });
+        var dialogTabs = cat(foundTabs);
+        var body = {
+          type: 'tabpanel',
+          tabs: dialogTabs
+        };
+        editor.windowManager.open({
+          title: 'Help',
+          size: 'medium',
+          body: body,
+          buttons: [{
+              type: 'cancel',
+              name: 'close',
+              text: 'Close',
+              primary: true
+            }],
+          initialData: {}
+        });
+      };
+    };
+
+    function Plugin () {
+      global.add('help', function (editor) {
+        var customTabs = Cell({});
+        var api = get(customTabs);
+        var dialogOpener = init(editor, customTabs);
+        register$1(editor, dialogOpener);
+        register(editor, dialogOpener);
+        editor.shortcuts.add('Alt+0', 'Open help dialog', 'mceHelp');
+        return api;
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var register = function (editor) {
+      editor.addCommand('InsertHorizontalRule', function () {
+        editor.execCommand('mceInsertContent', false, '<hr />');
+      });
+    };
+
+    var register$1 = function (editor) {
+      editor.ui.registry.addButton('hr', {
+        icon: 'horizontal-rule',
+        tooltip: 'Horizontal line',
+        onAction: function () {
+          return editor.execCommand('InsertHorizontalRule');
+        }
+      });
+      editor.ui.registry.addMenuItem('hr', {
+        icon: 'horizontal-rule',
+        text: 'Horizontal line',
+        onAction: function () {
+          return editor.execCommand('InsertHorizontalRule');
+        }
+      });
+    };
+
+    function Plugin () {
+      global.add('hr', function (editor) {
+        register(editor);
+        register$1(editor);
       });
     }
 
@@ -55746,880 +56667,6 @@ tinymce.IconManager.add('default', {
 
     var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
 
-    var get = function (customTabs) {
-      var addTab = function (spec) {
-        var currentCustomTabs = customTabs.get();
-        currentCustomTabs[spec.name] = spec;
-        customTabs.set(currentCustomTabs);
-      };
-      return { addTab: addTab };
-    };
-
-    var register = function (editor, dialogOpener) {
-      editor.addCommand('mceHelp', dialogOpener);
-    };
-
-    var register$1 = function (editor, dialogOpener) {
-      editor.ui.registry.addButton('help', {
-        icon: 'help',
-        tooltip: 'Help',
-        onAction: dialogOpener
-      });
-      editor.ui.registry.addMenuItem('help', {
-        text: 'Help',
-        icon: 'help',
-        shortcut: 'Alt+0',
-        onAction: dialogOpener
-      });
-    };
-
-    var __assign = function () {
-      __assign = Object.assign || function __assign(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-          s = arguments[i];
-          for (var p in s)
-            if (Object.prototype.hasOwnProperty.call(s, p))
-              t[p] = s[p];
-        }
-        return t;
-      };
-      return __assign.apply(this, arguments);
-    };
-
-    var noop = function () {
-    };
-    var constant = function (value) {
-      return function () {
-        return value;
-      };
-    };
-    var never = constant(false);
-    var always = constant(true);
-
-    var none = function () {
-      return NONE;
-    };
-    var NONE = function () {
-      var eq = function (o) {
-        return o.isNone();
-      };
-      var call = function (thunk) {
-        return thunk();
-      };
-      var id = function (n) {
-        return n;
-      };
-      var me = {
-        fold: function (n, _s) {
-          return n();
-        },
-        is: never,
-        isSome: never,
-        isNone: always,
-        getOr: id,
-        getOrThunk: call,
-        getOrDie: function (msg) {
-          throw new Error(msg || 'error: getOrDie called on none.');
-        },
-        getOrNull: constant(null),
-        getOrUndefined: constant(undefined),
-        or: id,
-        orThunk: call,
-        map: none,
-        each: noop,
-        bind: none,
-        exists: never,
-        forall: always,
-        filter: none,
-        equals: eq,
-        equals_: eq,
-        toArray: function () {
-          return [];
-        },
-        toString: constant('none()')
-      };
-      return me;
-    }();
-    var some = function (a) {
-      var constant_a = constant(a);
-      var self = function () {
-        return me;
-      };
-      var bind = function (f) {
-        return f(a);
-      };
-      var me = {
-        fold: function (n, s) {
-          return s(a);
-        },
-        is: function (v) {
-          return a === v;
-        },
-        isSome: always,
-        isNone: never,
-        getOr: constant_a,
-        getOrThunk: constant_a,
-        getOrDie: constant_a,
-        getOrNull: constant_a,
-        getOrUndefined: constant_a,
-        or: self,
-        orThunk: self,
-        map: function (f) {
-          return some(f(a));
-        },
-        each: function (f) {
-          f(a);
-        },
-        bind: bind,
-        exists: bind,
-        forall: bind,
-        filter: function (f) {
-          return f(a) ? me : NONE;
-        },
-        toArray: function () {
-          return [a];
-        },
-        toString: function () {
-          return 'some(' + a + ')';
-        },
-        equals: function (o) {
-          return o.is(a);
-        },
-        equals_: function (o, elementEq) {
-          return o.fold(never, function (b) {
-            return elementEq(a, b);
-          });
-        }
-      };
-      return me;
-    };
-    var from = function (value) {
-      return value === null || value === undefined ? NONE : some(value);
-    };
-    var Optional = {
-      some: some,
-      none: none,
-      from: from
-    };
-
-    var nativeIndexOf = Array.prototype.indexOf;
-    var rawIndexOf = function (ts, t) {
-      return nativeIndexOf.call(ts, t);
-    };
-    var contains = function (xs, x) {
-      return rawIndexOf(xs, x) > -1;
-    };
-    var map = function (xs, f) {
-      var len = xs.length;
-      var r = new Array(len);
-      for (var i = 0; i < len; i++) {
-        var x = xs[i];
-        r[i] = f(x, i);
-      }
-      return r;
-    };
-    var filter = function (xs, pred) {
-      var r = [];
-      for (var i = 0, len = xs.length; i < len; i++) {
-        var x = xs[i];
-        if (pred(x, i)) {
-          r.push(x);
-        }
-      }
-      return r;
-    };
-    var findUntil = function (xs, pred, until) {
-      for (var i = 0, len = xs.length; i < len; i++) {
-        var x = xs[i];
-        if (pred(x, i)) {
-          return Optional.some(x);
-        } else if (until(x, i)) {
-          break;
-        }
-      }
-      return Optional.none();
-    };
-    var find = function (xs, pred) {
-      return findUntil(xs, pred, never);
-    };
-
-    var keys = Object.keys;
-    var hasOwnProperty = Object.hasOwnProperty;
-    var get$1 = function (obj, key) {
-      return has(obj, key) ? Optional.from(obj[key]) : Optional.none();
-    };
-    var has = function (obj, key) {
-      return hasOwnProperty.call(obj, key);
-    };
-
-    var cat = function (arr) {
-      var r = [];
-      var push = function (x) {
-        r.push(x);
-      };
-      for (var i = 0; i < arr.length; i++) {
-        arr[i].each(push);
-      }
-      return r;
-    };
-
-    var getHelpTabs = function (editor) {
-      return Optional.from(editor.getParam('help_tabs'));
-    };
-    var getForcedPlugins = function (editor) {
-      return editor.getParam('forced_plugins');
-    };
-
-    var description = '<h1>Editor UI keyboard navigation</h1>\n\n<h2>Activating keyboard navigation</h2>\n\n<p>The sections of the outer UI of the editor - the menubar, toolbar, sidebar and footer - are all keyboard navigable. As such, there are multiple ways to activate keyboard navigation:</p>\n<ul>\n  <li>Focus the menubar: Alt + F9 (Windows) or &#x2325;F9 (MacOS)</li>\n  <li>Focus the toolbar: Alt + F10 (Windows) or &#x2325;F10 (MacOS)</li>\n  <li>Focus the footer: Alt + F11 (Windows) or &#x2325;F11 (MacOS)</li>\n</ul>\n\n<p>Focusing the menubar or toolbar will start keyboard navigation at the first item in the menubar or toolbar, which will be highlighted with a gray background. Focusing the footer will start keyboard navigation at the first item in the element path, which will be highlighted with an underline. </p>\n\n<h2>Moving between UI sections</h2>\n\n<p>When keyboard navigation is active, pressing tab will move the focus to the next major section of the UI, where applicable. These sections are:</p>\n<ul>\n  <li>the menubar</li>\n  <li>each group of the toolbar </li>\n  <li>the sidebar</li>\n  <li>the element path in the footer </li>\n  <li>the wordcount toggle button in the footer </li>\n  <li>the branding link in the footer </li>\n  <li>the editor resize handle in the footer</li>\n</ul>\n\n<p>Pressing shift + tab will move backwards through the same sections, except when moving from the footer to the toolbar. Focusing the element path then pressing shift + tab will move focus to the first toolbar group, not the last.</p>\n\n<h2>Moving within UI sections</h2>\n\n<p>Keyboard navigation within UI sections can usually be achieved using the left and right arrow keys. This includes:</p>\n<ul>\n  <li>moving between menus in the menubar</li>\n  <li>moving between buttons in a toolbar group</li>\n  <li>moving between items in the element path</li>\n</ul>\n\n<p>In all these UI sections, keyboard navigation will cycle within the section. For example, focusing the last button in a toolbar group then pressing right arrow will move focus to the first item in the same toolbar group. </p>\n\n<h1>Executing buttons</h1>\n\n<p>To execute a button, navigate the selection to the desired button and hit space or enter.</p>\n\n<h1>Opening, navigating and closing menus</h1>\n\n<p>When focusing a menubar button or a toolbar button with a menu, pressing space, enter or down arrow will open the menu. When the menu opens the first item will be selected. To move up or down the menu, press the up or down arrow key respectively. This is the same for submenus, which can also be opened and closed using the left and right arrow keys.</p>\n\n<p>To close any active menu, hit the escape key. When a menu is closed the selection will be restored to its previous selection. This also works for closing submenus.</p>\n\n<h1>Context toolbars and menus</h1>\n\n<p>To focus an open context toolbar such as the table context toolbar, press Ctrl + F9 (Windows) or &#x2303;F9 (MacOS).</p>\n\n<p>Context toolbar navigation is the same as toolbar navigation, and context menu navigation is the same as standard menu navigation.</p>\n\n<h1>Dialog navigation</h1>\n\n<p>There are two types of dialog UIs in TinyMCE: tabbed dialogs and non-tabbed dialogs.</p>\n\n<p>When a non-tabbed dialog is opened, the first interactive component in the dialog will be focused. Users can navigate between interactive components by pressing tab. This includes any footer buttons. Navigation will cycle back to the first dialog component if tab is pressed while focusing the last component in the dialog. Pressing shift + tab will navigate backwards.</p>\n\n<p>When a tabbed dialog is opened, the first button in the tab menu is focused. Pressing tab will navigate to the first interactive component in that tab, and will cycle through the tab\u2019s components, the footer buttons, then back to the tab button. To switch to another tab, focus the tab button for the current tab, then use the arrow keys to cycle through the tab buttons.</p>';
-    var tab = function () {
-      var body = {
-        type: 'htmlpanel',
-        presets: 'document',
-        html: description
-      };
-      return {
-        name: 'keyboardnav',
-        title: 'Keyboard Navigation',
-        items: [body]
-      };
-    };
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.Env');
-
-    var convertText = function (source) {
-      var mac = {
-        alt: '&#x2325;',
-        ctrl: '&#x2303;',
-        shift: '&#x21E7;',
-        meta: '&#x2318;',
-        access: '&#x2303;&#x2325;'
-      };
-      var other = {
-        meta: 'Ctrl ',
-        access: 'Shift + Alt '
-      };
-      var replace = global$1.mac ? mac : other;
-      var shortcut = source.split('+');
-      var updated = map(shortcut, function (segment) {
-        var search = segment.toLowerCase().trim();
-        return has(replace, search) ? replace[search] : segment;
-      });
-      return global$1.mac ? updated.join('').replace(/\s/, '') : updated.join('+');
-    };
-
-    var shortcuts = [
-      {
-        shortcuts: ['Meta + B'],
-        action: 'Bold'
-      },
-      {
-        shortcuts: ['Meta + I'],
-        action: 'Italic'
-      },
-      {
-        shortcuts: ['Meta + U'],
-        action: 'Underline'
-      },
-      {
-        shortcuts: ['Meta + A'],
-        action: 'Select all'
-      },
-      {
-        shortcuts: [
-          'Meta + Y',
-          'Meta + Shift + Z'
-        ],
-        action: 'Redo'
-      },
-      {
-        shortcuts: ['Meta + Z'],
-        action: 'Undo'
-      },
-      {
-        shortcuts: ['Access + 1'],
-        action: 'Heading 1'
-      },
-      {
-        shortcuts: ['Access + 2'],
-        action: 'Heading 2'
-      },
-      {
-        shortcuts: ['Access + 3'],
-        action: 'Heading 3'
-      },
-      {
-        shortcuts: ['Access + 4'],
-        action: 'Heading 4'
-      },
-      {
-        shortcuts: ['Access + 5'],
-        action: 'Heading 5'
-      },
-      {
-        shortcuts: ['Access + 6'],
-        action: 'Heading 6'
-      },
-      {
-        shortcuts: ['Access + 7'],
-        action: 'Paragraph'
-      },
-      {
-        shortcuts: ['Access + 8'],
-        action: 'Div'
-      },
-      {
-        shortcuts: ['Access + 9'],
-        action: 'Address'
-      },
-      {
-        shortcuts: ['Alt + 0'],
-        action: 'Open help dialog'
-      },
-      {
-        shortcuts: ['Alt + F9'],
-        action: 'Focus to menubar'
-      },
-      {
-        shortcuts: ['Alt + F10'],
-        action: 'Focus to toolbar'
-      },
-      {
-        shortcuts: ['Alt + F11'],
-        action: 'Focus to element path'
-      },
-      {
-        shortcuts: ['Ctrl + F9'],
-        action: 'Focus to contextual toolbar'
-      },
-      {
-        shortcuts: ['Shift + Enter'],
-        action: 'Open popup menu for split buttons'
-      },
-      {
-        shortcuts: ['Meta + K'],
-        action: 'Insert link (if link plugin activated)'
-      },
-      {
-        shortcuts: ['Meta + S'],
-        action: 'Save (if save plugin activated)'
-      },
-      {
-        shortcuts: ['Meta + F'],
-        action: 'Find (if searchreplace plugin activated)'
-      },
-      {
-        shortcuts: ['Meta + Shift + F'],
-        action: 'Switch to or from fullscreen mode'
-      }
-    ];
-
-    var tab$1 = function () {
-      var shortcutList = map(shortcuts, function (shortcut) {
-        var shortcutText = map(shortcut.shortcuts, convertText).join(' or ');
-        return [
-          shortcut.action,
-          shortcutText
-        ];
-      });
-      var tablePanel = {
-        type: 'table',
-        header: [
-          'Action',
-          'Shortcut'
-        ],
-        cells: shortcutList
-      };
-      return {
-        name: 'shortcuts',
-        title: 'Handy Shortcuts',
-        items: [tablePanel]
-      };
-    };
-
-    var global$2 = tinymce.util.Tools.resolve('tinymce.util.I18n');
-
-    var premiumType = 'premium';
-    var openSourceType = 'opensource';
-    var urls = map([
-      {
-        key: 'advlist',
-        name: 'Advanced List'
-      },
-      {
-        key: 'anchor',
-        name: 'Anchor'
-      },
-      {
-        key: 'autolink',
-        name: 'Autolink'
-      },
-      {
-        key: 'autoresize',
-        name: 'Autoresize'
-      },
-      {
-        key: 'autosave',
-        name: 'Autosave'
-      },
-      {
-        key: 'bbcode',
-        name: 'BBCode'
-      },
-      {
-        key: 'charmap',
-        name: 'Character Map'
-      },
-      {
-        key: 'code',
-        name: 'Code'
-      },
-      {
-        key: 'codesample',
-        name: 'Code Sample'
-      },
-      {
-        key: 'colorpicker',
-        name: 'Color Picker'
-      },
-      {
-        key: 'directionality',
-        name: 'Directionality'
-      },
-      {
-        key: 'emoticons',
-        name: 'Emoticons'
-      },
-      {
-        key: 'fullpage',
-        name: 'Full Page'
-      },
-      {
-        key: 'fullscreen',
-        name: 'Full Screen'
-      },
-      {
-        key: 'help',
-        name: 'Help'
-      },
-      {
-        key: 'hr',
-        name: 'Horizontal Rule'
-      },
-      {
-        key: 'image',
-        name: 'Image'
-      },
-      {
-        key: 'imagetools',
-        name: 'Image Tools'
-      },
-      {
-        key: 'importcss',
-        name: 'Import CSS'
-      },
-      {
-        key: 'insertdatetime',
-        name: 'Insert Date/Time'
-      },
-      {
-        key: 'legacyoutput',
-        name: 'Legacy Output'
-      },
-      {
-        key: 'link',
-        name: 'Link'
-      },
-      {
-        key: 'lists',
-        name: 'Lists'
-      },
-      {
-        key: 'media',
-        name: 'Media'
-      },
-      {
-        key: 'nonbreaking',
-        name: 'Nonbreaking'
-      },
-      {
-        key: 'noneditable',
-        name: 'Noneditable'
-      },
-      {
-        key: 'pagebreak',
-        name: 'Page Break'
-      },
-      {
-        key: 'paste',
-        name: 'Paste'
-      },
-      {
-        key: 'preview',
-        name: 'Preview'
-      },
-      {
-        key: 'print',
-        name: 'Print'
-      },
-      {
-        key: 'save',
-        name: 'Save'
-      },
-      {
-        key: 'searchreplace',
-        name: 'Search and Replace'
-      },
-      {
-        key: 'spellchecker',
-        name: 'Spell Checker'
-      },
-      {
-        key: 'tabfocus',
-        name: 'Tab Focus'
-      },
-      {
-        key: 'table',
-        name: 'Table'
-      },
-      {
-        key: 'template',
-        name: 'Template'
-      },
-      {
-        key: 'textcolor',
-        name: 'Text Color'
-      },
-      {
-        key: 'textpattern',
-        name: 'Text Pattern'
-      },
-      {
-        key: 'toc',
-        name: 'Table of Contents'
-      },
-      {
-        key: 'visualblocks',
-        name: 'Visual Blocks'
-      },
-      {
-        key: 'visualchars',
-        name: 'Visual Characters'
-      },
-      {
-        key: 'wordcount',
-        name: 'Word Count'
-      },
-      {
-        key: 'advcode',
-        name: 'Advanced Code Editor*',
-        type: premiumType
-      },
-      {
-        key: 'formatpainter',
-        name: 'Format Painter*',
-        type: premiumType
-      },
-      {
-        key: 'powerpaste',
-        name: 'PowerPaste*',
-        type: premiumType
-      },
-      {
-        key: 'tinydrive',
-        name: 'Tiny Drive*',
-        type: premiumType
-      },
-      {
-        key: 'tinymcespellchecker',
-        name: 'Spell Checker Pro*',
-        type: premiumType
-      },
-      {
-        key: 'a11ychecker',
-        name: 'Accessibility Checker*',
-        type: premiumType
-      },
-      {
-        key: 'linkchecker',
-        name: 'Link Checker*',
-        type: premiumType
-      },
-      {
-        key: 'mentions',
-        name: 'Mentions*',
-        type: premiumType
-      },
-      {
-        key: 'mediaembed',
-        name: 'Enhanced Media Embed*',
-        type: premiumType
-      },
-      {
-        key: 'checklist',
-        name: 'Checklist*',
-        type: premiumType
-      },
-      {
-        key: 'casechange',
-        name: 'Case Change*',
-        type: premiumType
-      },
-      {
-        key: 'permanentpen',
-        name: 'Permanent Pen*',
-        type: premiumType
-      },
-      {
-        key: 'pageembed',
-        name: 'Page Embed*',
-        type: premiumType
-      },
-      {
-        key: 'tinycomments',
-        name: 'Tiny Comments*',
-        type: premiumType,
-        slug: 'comments'
-      },
-      {
-        key: 'advtable',
-        name: 'Advanced Tables*',
-        type: premiumType
-      },
-      {
-        key: 'autocorrect',
-        name: 'Autocorrect*',
-        type: premiumType
-      },
-      {
-        key: 'export',
-        name: 'Export*',
-        type: premiumType
-      }
-    ], function (item) {
-      return __assign(__assign({}, item), {
-        type: item.type || openSourceType,
-        slug: item.slug || item.key
-      });
-    });
-
-    var tab$2 = function (editor) {
-      var availablePlugins = function () {
-        var premiumPlugins = [
-          'Accessibility Checker',
-          'Advanced Code Editor',
-          'Advanced Tables',
-          'Case Change',
-          'Checklist',
-          'Export',
-          'Tiny Comments',
-          'Tiny Drive',
-          'Enhanced Media Embed',
-          'Format Painter',
-          'Link Checker',
-          'Mentions',
-          'MoxieManager',
-          'Page Embed',
-          'Permanent Pen',
-          'PowerPaste',
-          'Spell Checker Pro'
-        ];
-        var premiumPluginList = map(premiumPlugins, function (plugin) {
-          return '<li>' + global$2.translate(plugin) + '</li>';
-        }).join('');
-        return '<div data-mce-tabstop="1" tabindex="-1">' + '<p><b>' + global$2.translate('Premium plugins:') + '</b></p>' + '<ul>' + premiumPluginList + '<li class="tox-help__more-link" "><a href="https://www.tiny.cloud/pricing/?utm_campaign=editor_referral&utm_medium=help_dialog&utm_source=tinymce" target="_blank">' + global$2.translate('Learn more...') + '</a></li>' + '</ul>' + '</div>';
-      };
-      var makeLink = function (p) {
-        return '<a href="' + p.url + '" target="_blank" rel="noopener">' + p.name + '</a>';
-      };
-      var maybeUrlize = function (editor, key) {
-        return find(urls, function (x) {
-          return x.key === key;
-        }).fold(function () {
-          var getMetadata = editor.plugins[key].getMetadata;
-          return typeof getMetadata === 'function' ? makeLink(getMetadata()) : key;
-        }, function (x) {
-          return makeLink({
-            name: x.name,
-            url: 'https://www.tiny.cloud/docs/plugins/' + x.type + '/' + x.slug
-          });
-        });
-      };
-      var getPluginKeys = function (editor) {
-        var keys$1 = keys(editor.plugins);
-        var forced_plugins = getForcedPlugins(editor);
-        return forced_plugins === undefined ? keys$1 : filter(keys$1, function (k) {
-          return !contains(forced_plugins, k);
-        });
-      };
-      var pluginLister = function (editor) {
-        var pluginKeys = getPluginKeys(editor);
-        var pluginLis = map(pluginKeys, function (key) {
-          return '<li>' + maybeUrlize(editor, key) + '</li>';
-        });
-        var count = pluginLis.length;
-        var pluginsString = pluginLis.join('');
-        var html = '<p><b>' + global$2.translate([
-          'Plugins installed ({0}):',
-          count
-        ]) + '</b></p>' + '<ul>' + pluginsString + '</ul>';
-        return html;
-      };
-      var installedPlugins = function (editor) {
-        if (editor == null) {
-          return '';
-        }
-        return '<div data-mce-tabstop="1" tabindex="-1">' + pluginLister(editor) + '</div>';
-      };
-      var htmlPanel = {
-        type: 'htmlpanel',
-        presets: 'document',
-        html: [
-          installedPlugins(editor),
-          availablePlugins()
-        ].join('')
-      };
-      return {
-        name: 'plugins',
-        title: 'Plugins',
-        items: [htmlPanel]
-      };
-    };
-
-    var global$3 = tinymce.util.Tools.resolve('tinymce.EditorManager');
-
-    var tab$3 = function () {
-      var getVersion = function (major, minor) {
-        return major.indexOf('@') === 0 ? 'X.X.X' : major + '.' + minor;
-      };
-      var version = getVersion(global$3.majorVersion, global$3.minorVersion);
-      var changeLogLink = '<a href="https://www.tiny.cloud/docs/changelog/?utm_campaign=editor_referral&utm_medium=help_dialog&utm_source=tinymce" target="_blank">TinyMCE ' + version + '</a>';
-      var htmlPanel = {
-        type: 'htmlpanel',
-        html: '<p>' + global$2.translate([
-          'You are using {0}',
-          changeLogLink
-        ]) + '</p>',
-        presets: 'document'
-      };
-      return {
-        name: 'versions',
-        title: 'Version',
-        items: [htmlPanel]
-      };
-    };
-
-    var parseHelpTabsSetting = function (tabsFromSettings, tabs) {
-      var newTabs = {};
-      var names = map(tabsFromSettings, function (t) {
-        if (typeof t === 'string') {
-          if (has(tabs, t)) {
-            newTabs[t] = tabs[t];
-          }
-          return t;
-        } else {
-          newTabs[t.name] = t;
-          return t.name;
-        }
-      });
-      return {
-        tabs: newTabs,
-        names: names
-      };
-    };
-    var getNamesFromTabs = function (tabs) {
-      var names = keys(tabs);
-      var idx = names.indexOf('versions');
-      if (idx !== -1) {
-        names.splice(idx, 1);
-        names.push('versions');
-      }
-      return {
-        tabs: tabs,
-        names: names
-      };
-    };
-    var parseCustomTabs = function (editor, customTabs) {
-      var _a;
-      var shortcuts = tab$1();
-      var nav = tab();
-      var plugins = tab$2(editor);
-      var versions = tab$3();
-      var tabs = __assign((_a = {}, _a[shortcuts.name] = shortcuts, _a[nav.name] = nav, _a[plugins.name] = plugins, _a[versions.name] = versions, _a), customTabs.get());
-      return getHelpTabs(editor).fold(function () {
-        return getNamesFromTabs(tabs);
-      }, function (tabsFromSettings) {
-        return parseHelpTabsSetting(tabsFromSettings, tabs);
-      });
-    };
-    var init = function (editor, customTabs) {
-      return function () {
-        var _a = parseCustomTabs(editor, customTabs), tabs = _a.tabs, names = _a.names;
-        var foundTabs = map(names, function (name) {
-          return get$1(tabs, name);
-        });
-        var dialogTabs = cat(foundTabs);
-        var body = {
-          type: 'tabpanel',
-          tabs: dialogTabs
-        };
-        editor.windowManager.open({
-          title: 'Help',
-          size: 'medium',
-          body: body,
-          buttons: [{
-              type: 'cancel',
-              name: 'close',
-              text: 'Close',
-              primary: true
-            }],
-          initialData: {}
-        });
-      };
-    };
-
-    function Plugin () {
-      global.add('help', function (editor) {
-        var customTabs = Cell({});
-        var api = get(customTabs);
-        var dialogOpener = init(editor, customTabs);
-        register$1(editor, dialogOpener);
-        register(editor, dialogOpener);
-        editor.shortcuts.add('Alt+0', 'Open help dialog', 'mceHelp');
-        return api;
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var Cell = function (initial) {
-      var value = initial;
-      var get = function () {
-        return value;
-      };
-      var set = function (v) {
-        value = v;
-      };
-      return {
-        get: get,
-        set: set
-      };
-    };
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
     var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
 
     var isSimpleType = function (type) {
@@ -57941,53 +57988,6 @@ tinymce.IconManager.add('default', {
         register$1(editor);
         register$2(editor);
         setup(editor, imageUploadTimerState, lastSelectedImageState);
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var register = function (editor) {
-      editor.addCommand('InsertHorizontalRule', function () {
-        editor.execCommand('mceInsertContent', false, '<hr />');
-      });
-    };
-
-    var register$1 = function (editor) {
-      editor.ui.registry.addButton('hr', {
-        icon: 'horizontal-rule',
-        tooltip: 'Horizontal line',
-        onAction: function () {
-          return editor.execCommand('InsertHorizontalRule');
-        }
-      });
-      editor.ui.registry.addMenuItem('hr', {
-        icon: 'horizontal-rule',
-        text: 'Horizontal line',
-        onAction: function () {
-          return editor.execCommand('InsertHorizontalRule');
-        }
-      });
-    };
-
-    function Plugin () {
-      global.add('hr', function (editor) {
-        register(editor);
-        register$1(editor);
       });
     }
 
@@ -59997,108 +59997,6 @@ tinymce.IconManager.add('default', {
         setupContextToolbars(editor);
         setupGotoLinks(editor);
         register(editor);
-        setup(editor);
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var getKeyboardSpaces = function (editor) {
-      var spaces = editor.getParam('nonbreaking_force_tab', 0);
-      if (typeof spaces === 'boolean') {
-        return spaces === true ? 3 : 0;
-      } else {
-        return spaces;
-      }
-    };
-    var wrapNbsps = function (editor) {
-      return editor.getParam('nonbreaking_wrap', true, 'boolean');
-    };
-
-    var stringRepeat = function (string, repeats) {
-      var str = '';
-      for (var index = 0; index < repeats; index++) {
-        str += string;
-      }
-      return str;
-    };
-    var isVisualCharsEnabled = function (editor) {
-      return editor.plugins.visualchars ? editor.plugins.visualchars.isEnabled() : false;
-    };
-    var insertNbsp = function (editor, times) {
-      var classes = function () {
-        return isVisualCharsEnabled(editor) ? 'mce-nbsp-wrap mce-nbsp' : 'mce-nbsp-wrap';
-      };
-      var nbspSpan = function () {
-        return '<span class="' + classes() + '" contenteditable="false">' + stringRepeat('&nbsp;', times) + '</span>';
-      };
-      var shouldWrap = wrapNbsps(editor);
-      var html = shouldWrap || editor.plugins.visualchars ? nbspSpan() : stringRepeat('&nbsp;', times);
-      editor.undoManager.transact(function () {
-        return editor.insertContent(html);
-      });
-    };
-
-    var register = function (editor) {
-      editor.addCommand('mceNonBreaking', function () {
-        insertNbsp(editor, 1);
-      });
-    };
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.util.VK');
-
-    var setup = function (editor) {
-      var spaces = getKeyboardSpaces(editor);
-      if (spaces > 0) {
-        editor.on('keydown', function (e) {
-          if (e.keyCode === global$1.TAB && !e.isDefaultPrevented()) {
-            if (e.shiftKey) {
-              return;
-            }
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            insertNbsp(editor, spaces);
-          }
-        });
-      }
-    };
-
-    var register$1 = function (editor) {
-      editor.ui.registry.addButton('nonbreaking', {
-        icon: 'non-breaking',
-        tooltip: 'Nonbreaking space',
-        onAction: function () {
-          return editor.execCommand('mceNonBreaking');
-        }
-      });
-      editor.ui.registry.addMenuItem('nonbreaking', {
-        icon: 'non-breaking',
-        text: 'Nonbreaking space',
-        onAction: function () {
-          return editor.execCommand('mceNonBreaking');
-        }
-      });
-    };
-
-    function Plugin () {
-      global.add('nonbreaking', function (editor) {
-        register(editor);
-        register$1(editor);
         setup(editor);
       });
     }
@@ -63790,6 +63688,332 @@ tinymce.IconManager.add('default', {
 
     var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
 
+    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
+
+    var getNonEditableClass = function (editor) {
+      return editor.getParam('noneditable_noneditable_class', 'mceNonEditable');
+    };
+    var getEditableClass = function (editor) {
+      return editor.getParam('noneditable_editable_class', 'mceEditable');
+    };
+    var getNonEditableRegExps = function (editor) {
+      var nonEditableRegExps = editor.getParam('noneditable_regexp', []);
+      if (nonEditableRegExps && nonEditableRegExps.constructor === RegExp) {
+        return [nonEditableRegExps];
+      } else {
+        return nonEditableRegExps;
+      }
+    };
+
+    var hasClass = function (checkClassName) {
+      return function (node) {
+        return (' ' + node.attr('class') + ' ').indexOf(checkClassName) !== -1;
+      };
+    };
+    var replaceMatchWithSpan = function (editor, content, cls) {
+      return function (match) {
+        var args = arguments, index = args[args.length - 2];
+        var prevChar = index > 0 ? content.charAt(index - 1) : '';
+        if (prevChar === '"') {
+          return match;
+        }
+        if (prevChar === '>') {
+          var findStartTagIndex = content.lastIndexOf('<', index);
+          if (findStartTagIndex !== -1) {
+            var tagHtml = content.substring(findStartTagIndex, index);
+            if (tagHtml.indexOf('contenteditable="false"') !== -1) {
+              return match;
+            }
+          }
+        }
+        return '<span class="' + cls + '" data-mce-content="' + editor.dom.encode(args[0]) + '">' + editor.dom.encode(typeof args[1] === 'string' ? args[1] : args[0]) + '</span>';
+      };
+    };
+    var convertRegExpsToNonEditable = function (editor, nonEditableRegExps, e) {
+      var i = nonEditableRegExps.length, content = e.content;
+      if (e.format === 'raw') {
+        return;
+      }
+      while (i--) {
+        content = content.replace(nonEditableRegExps[i], replaceMatchWithSpan(editor, content, getNonEditableClass(editor)));
+      }
+      e.content = content;
+    };
+    var setup = function (editor) {
+      var contentEditableAttrName = 'contenteditable';
+      var editClass = ' ' + global$1.trim(getEditableClass(editor)) + ' ';
+      var nonEditClass = ' ' + global$1.trim(getNonEditableClass(editor)) + ' ';
+      var hasEditClass = hasClass(editClass);
+      var hasNonEditClass = hasClass(nonEditClass);
+      var nonEditableRegExps = getNonEditableRegExps(editor);
+      editor.on('PreInit', function () {
+        if (nonEditableRegExps.length > 0) {
+          editor.on('BeforeSetContent', function (e) {
+            convertRegExpsToNonEditable(editor, nonEditableRegExps, e);
+          });
+        }
+        editor.parser.addAttributeFilter('class', function (nodes) {
+          var i = nodes.length, node;
+          while (i--) {
+            node = nodes[i];
+            if (hasEditClass(node)) {
+              node.attr(contentEditableAttrName, 'true');
+            } else if (hasNonEditClass(node)) {
+              node.attr(contentEditableAttrName, 'false');
+            }
+          }
+        });
+        editor.serializer.addAttributeFilter(contentEditableAttrName, function (nodes) {
+          var i = nodes.length, node;
+          while (i--) {
+            node = nodes[i];
+            if (!hasEditClass(node) && !hasNonEditClass(node)) {
+              continue;
+            }
+            if (nonEditableRegExps.length > 0 && node.attr('data-mce-content')) {
+              node.name = '#text';
+              node.type = 3;
+              node.raw = true;
+              node.value = node.attr('data-mce-content');
+            } else {
+              node.attr(contentEditableAttrName, null);
+            }
+          }
+        });
+      });
+    };
+
+    function Plugin () {
+      global.add('noneditable', function (editor) {
+        setup(editor);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var getKeyboardSpaces = function (editor) {
+      var spaces = editor.getParam('nonbreaking_force_tab', 0);
+      if (typeof spaces === 'boolean') {
+        return spaces === true ? 3 : 0;
+      } else {
+        return spaces;
+      }
+    };
+    var wrapNbsps = function (editor) {
+      return editor.getParam('nonbreaking_wrap', true, 'boolean');
+    };
+
+    var stringRepeat = function (string, repeats) {
+      var str = '';
+      for (var index = 0; index < repeats; index++) {
+        str += string;
+      }
+      return str;
+    };
+    var isVisualCharsEnabled = function (editor) {
+      return editor.plugins.visualchars ? editor.plugins.visualchars.isEnabled() : false;
+    };
+    var insertNbsp = function (editor, times) {
+      var classes = function () {
+        return isVisualCharsEnabled(editor) ? 'mce-nbsp-wrap mce-nbsp' : 'mce-nbsp-wrap';
+      };
+      var nbspSpan = function () {
+        return '<span class="' + classes() + '" contenteditable="false">' + stringRepeat('&nbsp;', times) + '</span>';
+      };
+      var shouldWrap = wrapNbsps(editor);
+      var html = shouldWrap || editor.plugins.visualchars ? nbspSpan() : stringRepeat('&nbsp;', times);
+      editor.undoManager.transact(function () {
+        return editor.insertContent(html);
+      });
+    };
+
+    var register = function (editor) {
+      editor.addCommand('mceNonBreaking', function () {
+        insertNbsp(editor, 1);
+      });
+    };
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.util.VK');
+
+    var setup = function (editor) {
+      var spaces = getKeyboardSpaces(editor);
+      if (spaces > 0) {
+        editor.on('keydown', function (e) {
+          if (e.keyCode === global$1.TAB && !e.isDefaultPrevented()) {
+            if (e.shiftKey) {
+              return;
+            }
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            insertNbsp(editor, spaces);
+          }
+        });
+      }
+    };
+
+    var register$1 = function (editor) {
+      editor.ui.registry.addButton('nonbreaking', {
+        icon: 'non-breaking',
+        tooltip: 'Nonbreaking space',
+        onAction: function () {
+          return editor.execCommand('mceNonBreaking');
+        }
+      });
+      editor.ui.registry.addMenuItem('nonbreaking', {
+        icon: 'non-breaking',
+        text: 'Nonbreaking space',
+        onAction: function () {
+          return editor.execCommand('mceNonBreaking');
+        }
+      });
+    };
+
+    function Plugin () {
+      global.add('nonbreaking', function (editor) {
+        register(editor);
+        register$1(editor);
+        setup(editor);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.Env');
+
+    var getSeparatorHtml = function (editor) {
+      return editor.getParam('pagebreak_separator', '<!-- pagebreak -->');
+    };
+    var shouldSplitBlock = function (editor) {
+      return editor.getParam('pagebreak_split_block', false);
+    };
+
+    var pageBreakClass = 'mce-pagebreak';
+    var getPlaceholderHtml = function (shouldSplitBlock) {
+      var html = '<img src="' + global$1.transparentSrc + '" class="' + pageBreakClass + '" data-mce-resize="false" data-mce-placeholder />';
+      return shouldSplitBlock ? '<p>' + html + '</p>' : html;
+    };
+    var setup = function (editor) {
+      var separatorHtml = getSeparatorHtml(editor);
+      var shouldSplitBlock$1 = function () {
+        return shouldSplitBlock(editor);
+      };
+      var pageBreakSeparatorRegExp = new RegExp(separatorHtml.replace(/[\?\.\*\[\]\(\)\{\}\+\^\$\:]/g, function (a) {
+        return '\\' + a;
+      }), 'gi');
+      editor.on('BeforeSetContent', function (e) {
+        e.content = e.content.replace(pageBreakSeparatorRegExp, getPlaceholderHtml(shouldSplitBlock$1()));
+      });
+      editor.on('PreInit', function () {
+        editor.serializer.addNodeFilter('img', function (nodes) {
+          var i = nodes.length, node, className;
+          while (i--) {
+            node = nodes[i];
+            className = node.attr('class');
+            if (className && className.indexOf(pageBreakClass) !== -1) {
+              var parentNode = node.parent;
+              if (editor.schema.getBlockElements()[parentNode.name] && shouldSplitBlock$1()) {
+                parentNode.type = 3;
+                parentNode.value = separatorHtml;
+                parentNode.raw = true;
+                node.remove();
+                continue;
+              }
+              node.type = 3;
+              node.value = separatorHtml;
+              node.raw = true;
+            }
+          }
+        });
+      });
+    };
+
+    var register = function (editor) {
+      editor.addCommand('mcePageBreak', function () {
+        editor.insertContent(getPlaceholderHtml(shouldSplitBlock(editor)));
+      });
+    };
+
+    var setup$1 = function (editor) {
+      editor.on('ResolveName', function (e) {
+        if (e.target.nodeName === 'IMG' && editor.dom.hasClass(e.target, pageBreakClass)) {
+          e.name = 'pagebreak';
+        }
+      });
+    };
+
+    var register$1 = function (editor) {
+      editor.ui.registry.addButton('pagebreak', {
+        icon: 'page-break',
+        tooltip: 'Page break',
+        onAction: function () {
+          return editor.execCommand('mcePageBreak');
+        }
+      });
+      editor.ui.registry.addMenuItem('pagebreak', {
+        text: 'Page break',
+        icon: 'page-break',
+        onAction: function () {
+          return editor.execCommand('mcePageBreak');
+        }
+      });
+    };
+
+    function Plugin () {
+      global.add('pagebreak', function (editor) {
+        register(editor);
+        register$1(editor);
+        setup(editor);
+        setup$1(editor);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
     var global$1 = tinymce.util.Tools.resolve('tinymce.Env');
 
     var global$2 = tinymce.util.Tools.resolve('tinymce.util.Tools');
@@ -65685,230 +65909,6 @@ tinymce.IconManager.add('default', {
 
     var global$1 = tinymce.util.Tools.resolve('tinymce.Env');
 
-    var getSeparatorHtml = function (editor) {
-      return editor.getParam('pagebreak_separator', '<!-- pagebreak -->');
-    };
-    var shouldSplitBlock = function (editor) {
-      return editor.getParam('pagebreak_split_block', false);
-    };
-
-    var pageBreakClass = 'mce-pagebreak';
-    var getPlaceholderHtml = function (shouldSplitBlock) {
-      var html = '<img src="' + global$1.transparentSrc + '" class="' + pageBreakClass + '" data-mce-resize="false" data-mce-placeholder />';
-      return shouldSplitBlock ? '<p>' + html + '</p>' : html;
-    };
-    var setup = function (editor) {
-      var separatorHtml = getSeparatorHtml(editor);
-      var shouldSplitBlock$1 = function () {
-        return shouldSplitBlock(editor);
-      };
-      var pageBreakSeparatorRegExp = new RegExp(separatorHtml.replace(/[\?\.\*\[\]\(\)\{\}\+\^\$\:]/g, function (a) {
-        return '\\' + a;
-      }), 'gi');
-      editor.on('BeforeSetContent', function (e) {
-        e.content = e.content.replace(pageBreakSeparatorRegExp, getPlaceholderHtml(shouldSplitBlock$1()));
-      });
-      editor.on('PreInit', function () {
-        editor.serializer.addNodeFilter('img', function (nodes) {
-          var i = nodes.length, node, className;
-          while (i--) {
-            node = nodes[i];
-            className = node.attr('class');
-            if (className && className.indexOf(pageBreakClass) !== -1) {
-              var parentNode = node.parent;
-              if (editor.schema.getBlockElements()[parentNode.name] && shouldSplitBlock$1()) {
-                parentNode.type = 3;
-                parentNode.value = separatorHtml;
-                parentNode.raw = true;
-                node.remove();
-                continue;
-              }
-              node.type = 3;
-              node.value = separatorHtml;
-              node.raw = true;
-            }
-          }
-        });
-      });
-    };
-
-    var register = function (editor) {
-      editor.addCommand('mcePageBreak', function () {
-        editor.insertContent(getPlaceholderHtml(shouldSplitBlock(editor)));
-      });
-    };
-
-    var setup$1 = function (editor) {
-      editor.on('ResolveName', function (e) {
-        if (e.target.nodeName === 'IMG' && editor.dom.hasClass(e.target, pageBreakClass)) {
-          e.name = 'pagebreak';
-        }
-      });
-    };
-
-    var register$1 = function (editor) {
-      editor.ui.registry.addButton('pagebreak', {
-        icon: 'page-break',
-        tooltip: 'Page break',
-        onAction: function () {
-          return editor.execCommand('mcePageBreak');
-        }
-      });
-      editor.ui.registry.addMenuItem('pagebreak', {
-        text: 'Page break',
-        icon: 'page-break',
-        onAction: function () {
-          return editor.execCommand('mcePageBreak');
-        }
-      });
-    };
-
-    function Plugin () {
-      global.add('pagebreak', function (editor) {
-        register(editor);
-        register$1(editor);
-        setup(editor);
-        setup$1(editor);
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
-
-    var getNonEditableClass = function (editor) {
-      return editor.getParam('noneditable_noneditable_class', 'mceNonEditable');
-    };
-    var getEditableClass = function (editor) {
-      return editor.getParam('noneditable_editable_class', 'mceEditable');
-    };
-    var getNonEditableRegExps = function (editor) {
-      var nonEditableRegExps = editor.getParam('noneditable_regexp', []);
-      if (nonEditableRegExps && nonEditableRegExps.constructor === RegExp) {
-        return [nonEditableRegExps];
-      } else {
-        return nonEditableRegExps;
-      }
-    };
-
-    var hasClass = function (checkClassName) {
-      return function (node) {
-        return (' ' + node.attr('class') + ' ').indexOf(checkClassName) !== -1;
-      };
-    };
-    var replaceMatchWithSpan = function (editor, content, cls) {
-      return function (match) {
-        var args = arguments, index = args[args.length - 2];
-        var prevChar = index > 0 ? content.charAt(index - 1) : '';
-        if (prevChar === '"') {
-          return match;
-        }
-        if (prevChar === '>') {
-          var findStartTagIndex = content.lastIndexOf('<', index);
-          if (findStartTagIndex !== -1) {
-            var tagHtml = content.substring(findStartTagIndex, index);
-            if (tagHtml.indexOf('contenteditable="false"') !== -1) {
-              return match;
-            }
-          }
-        }
-        return '<span class="' + cls + '" data-mce-content="' + editor.dom.encode(args[0]) + '">' + editor.dom.encode(typeof args[1] === 'string' ? args[1] : args[0]) + '</span>';
-      };
-    };
-    var convertRegExpsToNonEditable = function (editor, nonEditableRegExps, e) {
-      var i = nonEditableRegExps.length, content = e.content;
-      if (e.format === 'raw') {
-        return;
-      }
-      while (i--) {
-        content = content.replace(nonEditableRegExps[i], replaceMatchWithSpan(editor, content, getNonEditableClass(editor)));
-      }
-      e.content = content;
-    };
-    var setup = function (editor) {
-      var contentEditableAttrName = 'contenteditable';
-      var editClass = ' ' + global$1.trim(getEditableClass(editor)) + ' ';
-      var nonEditClass = ' ' + global$1.trim(getNonEditableClass(editor)) + ' ';
-      var hasEditClass = hasClass(editClass);
-      var hasNonEditClass = hasClass(nonEditClass);
-      var nonEditableRegExps = getNonEditableRegExps(editor);
-      editor.on('PreInit', function () {
-        if (nonEditableRegExps.length > 0) {
-          editor.on('BeforeSetContent', function (e) {
-            convertRegExpsToNonEditable(editor, nonEditableRegExps, e);
-          });
-        }
-        editor.parser.addAttributeFilter('class', function (nodes) {
-          var i = nodes.length, node;
-          while (i--) {
-            node = nodes[i];
-            if (hasEditClass(node)) {
-              node.attr(contentEditableAttrName, 'true');
-            } else if (hasNonEditClass(node)) {
-              node.attr(contentEditableAttrName, 'false');
-            }
-          }
-        });
-        editor.serializer.addAttributeFilter(contentEditableAttrName, function (nodes) {
-          var i = nodes.length, node;
-          while (i--) {
-            node = nodes[i];
-            if (!hasEditClass(node) && !hasNonEditClass(node)) {
-              continue;
-            }
-            if (nonEditableRegExps.length > 0 && node.attr('data-mce-content')) {
-              node.name = '#text';
-              node.type = 3;
-              node.raw = true;
-              node.value = node.attr('data-mce-content');
-            } else {
-              node.attr(contentEditableAttrName, null);
-            }
-          }
-        });
-      });
-    };
-
-    function Plugin () {
-      global.add('noneditable', function (editor) {
-        setup(editor);
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.Env');
-
     var register = function (editor) {
       editor.addCommand('mcePrint', function () {
         if (global$1.browser.isIE()) {
@@ -65941,126 +65941,6 @@ tinymce.IconManager.add('default', {
         register(editor);
         register$1(editor);
         editor.addShortcut('Meta+P', '', 'mcePrint');
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.dom.DOMUtils');
-
-    var global$2 = tinymce.util.Tools.resolve('tinymce.util.Tools');
-
-    var enableWhenDirty = function (editor) {
-      return editor.getParam('save_enablewhendirty', true);
-    };
-    var hasOnSaveCallback = function (editor) {
-      return !!editor.getParam('save_onsavecallback');
-    };
-    var hasOnCancelCallback = function (editor) {
-      return !!editor.getParam('save_oncancelcallback');
-    };
-
-    var displayErrorMessage = function (editor, message) {
-      editor.notificationManager.open({
-        text: message,
-        type: 'error'
-      });
-    };
-    var save = function (editor) {
-      var formObj = global$1.DOM.getParent(editor.id, 'form');
-      if (enableWhenDirty(editor) && !editor.isDirty()) {
-        return;
-      }
-      editor.save();
-      if (hasOnSaveCallback(editor)) {
-        editor.execCallback('save_onsavecallback', editor);
-        editor.nodeChanged();
-        return;
-      }
-      if (formObj) {
-        editor.setDirty(false);
-        if (!formObj.onsubmit || formObj.onsubmit()) {
-          if (typeof formObj.submit === 'function') {
-            formObj.submit();
-          } else {
-            displayErrorMessage(editor, 'Error: Form submit field collision.');
-          }
-        }
-        editor.nodeChanged();
-      } else {
-        displayErrorMessage(editor, 'Error: No form element found.');
-      }
-    };
-    var cancel = function (editor) {
-      var h = global$2.trim(editor.startContent);
-      if (hasOnCancelCallback(editor)) {
-        editor.execCallback('save_oncancelcallback', editor);
-        return;
-      }
-      editor.resetContent(h);
-    };
-
-    var register = function (editor) {
-      editor.addCommand('mceSave', function () {
-        save(editor);
-      });
-      editor.addCommand('mceCancel', function () {
-        cancel(editor);
-      });
-    };
-
-    var stateToggle = function (editor) {
-      return function (api) {
-        var handler = function () {
-          api.setDisabled(enableWhenDirty(editor) && !editor.isDirty());
-        };
-        editor.on('NodeChange dirty', handler);
-        return function () {
-          return editor.off('NodeChange dirty', handler);
-        };
-      };
-    };
-    var register$1 = function (editor) {
-      editor.ui.registry.addButton('save', {
-        icon: 'save',
-        tooltip: 'Save',
-        disabled: true,
-        onAction: function () {
-          return editor.execCommand('mceSave');
-        },
-        onSetup: stateToggle(editor)
-      });
-      editor.ui.registry.addButton('cancel', {
-        icon: 'cancel',
-        tooltip: 'Cancel',
-        disabled: true,
-        onAction: function () {
-          return editor.execCommand('mceCancel');
-        },
-        onSetup: stateToggle(editor)
-      });
-      editor.addShortcut('Meta+S', '', 'mceSave');
-    };
-
-    function Plugin () {
-      global.add('save', function (editor) {
-        register$1(editor);
-        register(editor);
       });
     }
 
@@ -66569,850 +66449,108 @@ tinymce.IconManager.add('default', {
 (function () {
     'use strict';
 
-    var Cell = function (initial) {
-      var value = initial;
-      var get = function () {
-        return value;
-      };
-      var set = function (v) {
-        value = v;
-      };
-      return {
-        get: get,
-        set: set
-      };
-    };
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var hasProPlugin = function (editor) {
-      if (editor.hasPlugin('tinymcespellchecker', true)) {
-        if (typeof window.console !== 'undefined' && window.console.log) {
-          window.console.log('Spell Checker Pro is incompatible with Spell Checker plugin! ' + 'Remove \'spellchecker\' from the \'plugins\' option.');
-        }
-        return true;
-      } else {
-        return false;
-      }
-    };
-
-    var hasOwnProperty = Object.hasOwnProperty;
-    var isEmpty = function (r) {
-      for (var x in r) {
-        if (hasOwnProperty.call(r, x)) {
-          return false;
-        }
-      }
-      return true;
-    };
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
-
-    var global$2 = tinymce.util.Tools.resolve('tinymce.util.URI');
-
-    var global$3 = tinymce.util.Tools.resolve('tinymce.util.XHR');
-
-    var fireSpellcheckStart = function (editor) {
-      return editor.fire('SpellcheckStart');
-    };
-    var fireSpellcheckEnd = function (editor) {
-      return editor.fire('SpellcheckEnd');
-    };
-
-    var getLanguages = function (editor) {
-      var defaultLanguages = 'English=en,Danish=da,Dutch=nl,Finnish=fi,French=fr_FR,German=de,Italian=it,Polish=pl,Portuguese=pt_BR,Spanish=es,Swedish=sv';
-      return editor.getParam('spellchecker_languages', defaultLanguages);
-    };
-    var getLanguage = function (editor) {
-      var defaultLanguage = editor.getParam('language', 'en');
-      return editor.getParam('spellchecker_language', defaultLanguage);
-    };
-    var getRpcUrl = function (editor) {
-      return editor.getParam('spellchecker_rpc_url');
-    };
-    var getSpellcheckerCallback = function (editor) {
-      return editor.getParam('spellchecker_callback');
-    };
-    var getSpellcheckerWordcharPattern = function (editor) {
-      var defaultPattern = new RegExp('[^' + '\\s!"#$%&()*+,-./:;<=>?@[\\]^_{|}`' + '\xA7\xA9\xAB\xAE\xB1\xB6\xB7\xB8\xBB' + '\xBC\xBD\xBE\xBF\xD7\xF7\xA4\u201D\u201C\u201E\xA0\u2002\u2003\u2009' + ']+', 'g');
-      return editor.getParam('spellchecker_wordchar_pattern', defaultPattern);
-    };
-
-    var isContentEditableFalse = function (node) {
-      return node && node.nodeType === 1 && node.contentEditable === 'false';
-    };
-    var DomTextMatcher = function (node, editor) {
-      var m, matches = [];
-      var dom = editor.dom;
-      var blockElementsMap = editor.schema.getBlockElements();
-      var hiddenTextElementsMap = editor.schema.getWhiteSpaceElements();
-      var shortEndedElementsMap = editor.schema.getShortEndedElements();
-      var createMatch = function (m, data) {
-        if (!m[0]) {
-          throw new Error('findAndReplaceDOMText cannot handle zero-length matches');
-        }
-        return {
-          start: m.index,
-          end: m.index + m[0].length,
-          text: m[0],
-          data: data
-        };
-      };
-      var getText = function (node) {
-        var txt;
-        if (node.nodeType === 3) {
-          return node.data;
-        }
-        if (hiddenTextElementsMap[node.nodeName] && !blockElementsMap[node.nodeName]) {
-          return '';
-        }
-        if (isContentEditableFalse(node)) {
-          return '\n';
-        }
-        txt = '';
-        if (blockElementsMap[node.nodeName] || shortEndedElementsMap[node.nodeName]) {
-          txt += '\n';
-        }
-        if (node = node.firstChild) {
-          do {
-            txt += getText(node);
-          } while (node = node.nextSibling);
-        }
-        return txt;
-      };
-      var stepThroughMatches = function (node, matches, replaceFn) {
-        var startNode, endNode, startNodeIndex, endNodeIndex, innerNodes = [], atIndex = 0, curNode = node, matchLocation, matchIndex = 0;
-        matches = matches.slice(0);
-        matches.sort(function (a, b) {
-          return a.start - b.start;
-        });
-        matchLocation = matches.shift();
-        out:
-          while (true) {
-            if (blockElementsMap[curNode.nodeName] || shortEndedElementsMap[curNode.nodeName] || isContentEditableFalse(curNode)) {
-              atIndex++;
-            }
-            if (curNode.nodeType === 3) {
-              if (!endNode && curNode.length + atIndex >= matchLocation.end) {
-                endNode = curNode;
-                endNodeIndex = matchLocation.end - atIndex;
-              } else if (startNode) {
-                innerNodes.push(curNode);
-              }
-              if (!startNode && curNode.length + atIndex > matchLocation.start) {
-                startNode = curNode;
-                startNodeIndex = matchLocation.start - atIndex;
-              }
-              atIndex += curNode.length;
-            }
-            if (startNode && endNode) {
-              curNode = replaceFn({
-                startNode: startNode,
-                startNodeIndex: startNodeIndex,
-                endNode: endNode,
-                endNodeIndex: endNodeIndex,
-                innerNodes: innerNodes,
-                match: matchLocation.text,
-                matchIndex: matchIndex
-              });
-              atIndex -= endNode.length - endNodeIndex;
-              startNode = null;
-              endNode = null;
-              innerNodes = [];
-              matchLocation = matches.shift();
-              matchIndex++;
-              if (!matchLocation) {
-                break;
-              }
-            } else if ((!hiddenTextElementsMap[curNode.nodeName] || blockElementsMap[curNode.nodeName]) && curNode.firstChild) {
-              if (!isContentEditableFalse(curNode)) {
-                curNode = curNode.firstChild;
-                continue;
-              }
-            } else if (curNode.nextSibling) {
-              curNode = curNode.nextSibling;
-              continue;
-            }
-            while (true) {
-              if (curNode.nextSibling) {
-                curNode = curNode.nextSibling;
-                break;
-              } else if (curNode.parentNode !== node) {
-                curNode = curNode.parentNode;
-              } else {
-                break out;
-              }
-            }
-          }
-      };
-      var genReplacer = function (callback) {
-        var makeReplacementNode = function (fill, matchIndex) {
-          var match = matches[matchIndex];
-          if (!match.stencil) {
-            match.stencil = callback(match);
-          }
-          var clone = match.stencil.cloneNode(false);
-          clone.setAttribute('data-mce-index', matchIndex);
-          if (fill) {
-            clone.appendChild(dom.doc.createTextNode(fill));
-          }
-          return clone;
-        };
-        return function (range) {
-          var before;
-          var after;
-          var parentNode;
-          var startNode = range.startNode;
-          var endNode = range.endNode;
-          var matchIndex = range.matchIndex;
-          var doc = dom.doc;
-          if (startNode === endNode) {
-            var node_1 = startNode;
-            parentNode = node_1.parentNode;
-            if (range.startNodeIndex > 0) {
-              before = doc.createTextNode(node_1.data.substring(0, range.startNodeIndex));
-              parentNode.insertBefore(before, node_1);
-            }
-            var el = makeReplacementNode(range.match, matchIndex);
-            parentNode.insertBefore(el, node_1);
-            if (range.endNodeIndex < node_1.length) {
-              after = doc.createTextNode(node_1.data.substring(range.endNodeIndex));
-              parentNode.insertBefore(after, node_1);
-            }
-            node_1.parentNode.removeChild(node_1);
-            return el;
-          }
-          before = doc.createTextNode(startNode.data.substring(0, range.startNodeIndex));
-          after = doc.createTextNode(endNode.data.substring(range.endNodeIndex));
-          var elA = makeReplacementNode(startNode.data.substring(range.startNodeIndex), matchIndex);
-          for (var i = 0, l = range.innerNodes.length; i < l; ++i) {
-            var innerNode = range.innerNodes[i];
-            var innerEl = makeReplacementNode(innerNode.data, matchIndex);
-            innerNode.parentNode.replaceChild(innerEl, innerNode);
-          }
-          var elB = makeReplacementNode(endNode.data.substring(0, range.endNodeIndex), matchIndex);
-          parentNode = startNode.parentNode;
-          parentNode.insertBefore(before, startNode);
-          parentNode.insertBefore(elA, startNode);
-          parentNode.removeChild(startNode);
-          parentNode = endNode.parentNode;
-          parentNode.insertBefore(elB, endNode);
-          parentNode.insertBefore(after, endNode);
-          parentNode.removeChild(endNode);
-          return elB;
-        };
-      };
-      var unwrapElement = function (element) {
-        var parentNode = element.parentNode;
-        while (element.childNodes.length > 0) {
-          parentNode.insertBefore(element.childNodes[0], element);
-        }
-        parentNode.removeChild(element);
-      };
-      var hasClass = function (elm) {
-        return elm.className.indexOf('mce-spellchecker-word') !== -1;
-      };
-      var getWrappersByIndex = function (index) {
-        var elements = node.getElementsByTagName('*'), wrappers = [];
-        index = typeof index === 'number' ? '' + index : null;
-        for (var i = 0; i < elements.length; i++) {
-          var element = elements[i], dataIndex = element.getAttribute('data-mce-index');
-          if (dataIndex !== null && dataIndex.length && hasClass(element)) {
-            if (dataIndex === index || index === null) {
-              wrappers.push(element);
-            }
-          }
-        }
-        return wrappers;
-      };
-      var indexOf = function (match) {
-        var i = matches.length;
-        while (i--) {
-          if (matches[i] === match) {
-            return i;
-          }
-        }
-        return -1;
-      };
-      function filter(callback) {
-        var filteredMatches = [];
-        each(function (match, i) {
-          if (callback(match, i)) {
-            filteredMatches.push(match);
-          }
-        });
-        matches = filteredMatches;
-        return this;
-      }
-      function each(callback) {
-        for (var i = 0, l = matches.length; i < l; i++) {
-          if (callback(matches[i], i) === false) {
-            break;
-          }
-        }
-        return this;
-      }
-      function wrap(callback) {
-        if (matches.length) {
-          stepThroughMatches(node, matches, genReplacer(callback));
-        }
-        return this;
-      }
-      function find(regex, data) {
-        if (text && regex.global) {
-          while (m = regex.exec(text)) {
-            matches.push(createMatch(m, data));
-          }
-        }
-        return this;
-      }
-      function unwrap(match) {
-        var i;
-        var elements = getWrappersByIndex(match ? indexOf(match) : null);
-        i = elements.length;
-        while (i--) {
-          unwrapElement(elements[i]);
-        }
-        return this;
-      }
-      var matchFromElement = function (element) {
-        return matches[element.getAttribute('data-mce-index')];
-      };
-      var elementFromMatch = function (match) {
-        return getWrappersByIndex(indexOf(match))[0];
-      };
-      function add(start, length, data) {
-        matches.push({
-          start: start,
-          end: start + length,
-          text: text.substr(start, length),
-          data: data
-        });
-        return this;
-      }
-      var rangeFromMatch = function (match) {
-        var wrappers = getWrappersByIndex(indexOf(match));
-        var rng = editor.dom.createRng();
-        rng.setStartBefore(wrappers[0]);
-        rng.setEndAfter(wrappers[wrappers.length - 1]);
-        return rng;
-      };
-      var replace = function (match, text) {
-        var rng = rangeFromMatch(match);
-        rng.deleteContents();
-        if (text.length > 0) {
-          rng.insertNode(editor.dom.doc.createTextNode(text));
-        }
-        return rng;
-      };
-      function reset() {
-        matches.splice(0, matches.length);
-        unwrap();
-        return this;
-      }
-      var text = getText(node);
-      return {
-        text: text,
-        matches: matches,
-        each: each,
-        filter: filter,
-        reset: reset,
-        matchFromElement: matchFromElement,
-        elementFromMatch: elementFromMatch,
-        find: find,
-        add: add,
-        wrap: wrap,
-        unwrap: unwrap,
-        replace: replace,
-        rangeFromMatch: rangeFromMatch,
-        indexOf: indexOf
-      };
-    };
-
-    var getTextMatcher = function (editor, textMatcherState) {
-      if (!textMatcherState.get()) {
-        var textMatcher = DomTextMatcher(editor.getBody(), editor);
-        textMatcherState.set(textMatcher);
-      }
-      return textMatcherState.get();
-    };
-    var defaultSpellcheckCallback = function (editor, pluginUrl, currentLanguageState) {
-      return function (method, text, doneCallback, errorCallback) {
-        var data = {
-          method: method,
-          lang: currentLanguageState.get()
-        };
-        var postData = '';
-        data[method === 'addToDictionary' ? 'word' : 'text'] = text;
-        global$1.each(data, function (value, key) {
-          if (postData) {
-            postData += '&';
-          }
-          postData += key + '=' + encodeURIComponent(value);
-        });
-        global$3.send({
-          url: new global$2(pluginUrl).toAbsolute(getRpcUrl(editor)),
-          type: 'post',
-          content_type: 'application/x-www-form-urlencoded',
-          data: postData,
-          success: function (result) {
-            var parseResult = JSON.parse(result);
-            if (!parseResult) {
-              var message = editor.translate('Server response wasn\'t proper JSON.');
-              errorCallback(message);
-            } else if (parseResult.error) {
-              errorCallback(parseResult.error);
-            } else {
-              doneCallback(parseResult);
-            }
-          },
-          error: function () {
-            var message = editor.translate('The spelling service was not found: (') + getRpcUrl(editor) + editor.translate(')');
-            errorCallback(message);
-          }
-        });
-      };
-    };
-    var sendRpcCall = function (editor, pluginUrl, currentLanguageState, name, data, successCallback, errorCallback) {
-      var userSpellcheckCallback = getSpellcheckerCallback(editor);
-      var spellCheckCallback = userSpellcheckCallback ? userSpellcheckCallback : defaultSpellcheckCallback(editor, pluginUrl, currentLanguageState);
-      spellCheckCallback.call(editor.plugins.spellchecker, name, data, successCallback, errorCallback);
-    };
-    var spellcheck = function (editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState) {
-      if (finish(editor, startedState, textMatcherState)) {
-        return;
-      }
-      var errorCallback = function (message) {
-        editor.notificationManager.open({
-          text: message,
-          type: 'error'
-        });
-        editor.setProgressState(false);
-        finish(editor, startedState, textMatcherState);
-      };
-      var successCallback = function (data) {
-        markErrors(editor, startedState, textMatcherState, lastSuggestionsState, data);
-      };
-      editor.setProgressState(true);
-      sendRpcCall(editor, pluginUrl, currentLanguageState, 'spellcheck', getTextMatcher(editor, textMatcherState).text, successCallback, errorCallback);
-      editor.focus();
-    };
-    var checkIfFinished = function (editor, startedState, textMatcherState) {
-      if (!editor.dom.select('span.mce-spellchecker-word').length) {
-        finish(editor, startedState, textMatcherState);
-      }
-    };
-    var addToDictionary = function (editor, pluginUrl, startedState, textMatcherState, currentLanguageState, word, spans) {
-      editor.setProgressState(true);
-      sendRpcCall(editor, pluginUrl, currentLanguageState, 'addToDictionary', word, function () {
-        editor.setProgressState(false);
-        editor.dom.remove(spans, true);
-        checkIfFinished(editor, startedState, textMatcherState);
-      }, function (message) {
-        editor.notificationManager.open({
-          text: message,
-          type: 'error'
-        });
-        editor.setProgressState(false);
-      });
-    };
-    var ignoreWord = function (editor, startedState, textMatcherState, word, spans, all) {
-      editor.selection.collapse();
-      if (all) {
-        global$1.each(editor.dom.select('span.mce-spellchecker-word'), function (span) {
-          if (span.getAttribute('data-mce-word') === word) {
-            editor.dom.remove(span, true);
-          }
-        });
-      } else {
-        editor.dom.remove(spans, true);
-      }
-      checkIfFinished(editor, startedState, textMatcherState);
-    };
-    var finish = function (editor, startedState, textMatcherState) {
-      var bookmark = editor.selection.getBookmark();
-      getTextMatcher(editor, textMatcherState).reset();
-      editor.selection.moveToBookmark(bookmark);
-      textMatcherState.set(null);
-      if (startedState.get()) {
-        startedState.set(false);
-        fireSpellcheckEnd(editor);
-        return true;
-      }
-    };
-    var getElmIndex = function (elm) {
-      var value = elm.getAttribute('data-mce-index');
-      if (typeof value === 'number') {
-        return '' + value;
-      }
-      return value;
-    };
-    var findSpansByIndex = function (editor, index) {
-      var spans = [];
-      var nodes = global$1.toArray(editor.getBody().getElementsByTagName('span'));
-      if (nodes.length) {
-        for (var i = 0; i < nodes.length; i++) {
-          var nodeIndex = getElmIndex(nodes[i]);
-          if (nodeIndex === null || !nodeIndex.length) {
-            continue;
-          }
-          if (nodeIndex === index.toString()) {
-            spans.push(nodes[i]);
-          }
-        }
-      }
-      return spans;
-    };
-    var markErrors = function (editor, startedState, textMatcherState, lastSuggestionsState, data) {
-      var hasDictionarySupport = !!data.dictionary;
-      var suggestions = data.words;
-      editor.setProgressState(false);
-      if (isEmpty(suggestions)) {
-        var message = editor.translate('No misspellings found.');
-        editor.notificationManager.open({
-          text: message,
-          type: 'info'
-        });
-        startedState.set(false);
-        return;
-      }
-      lastSuggestionsState.set({
-        suggestions: suggestions,
-        hasDictionarySupport: hasDictionarySupport
-      });
-      var bookmark = editor.selection.getBookmark();
-      getTextMatcher(editor, textMatcherState).find(getSpellcheckerWordcharPattern(editor)).filter(function (match) {
-        return !!suggestions[match.text];
-      }).wrap(function (match) {
-        return editor.dom.create('span', {
-          'class': 'mce-spellchecker-word',
-          'aria-invalid': 'spelling',
-          'data-mce-bogus': 1,
-          'data-mce-word': match.text
-        });
-      });
-      editor.selection.moveToBookmark(bookmark);
-      startedState.set(true);
-      fireSpellcheckStart(editor);
-    };
-
-    var get = function (editor, startedState, lastSuggestionsState, textMatcherState, currentLanguageState, _url) {
-      var getWordCharPattern = function () {
-        return getSpellcheckerWordcharPattern(editor);
-      };
-      var markErrors$1 = function (data) {
-        markErrors(editor, startedState, textMatcherState, lastSuggestionsState, data);
-      };
-      return {
-        getTextMatcher: textMatcherState.get,
-        getWordCharPattern: getWordCharPattern,
-        markErrors: markErrors$1,
-        getLanguage: currentLanguageState.get
-      };
-    };
-
-    var register = function (editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState) {
-      editor.addCommand('mceSpellCheck', function () {
-        spellcheck(editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState);
-      });
-    };
-
-    var __assign = function () {
-      __assign = Object.assign || function __assign(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-          s = arguments[i];
-          for (var p in s)
-            if (Object.prototype.hasOwnProperty.call(s, p))
-              t[p] = s[p];
-        }
-        return t;
-      };
-      return __assign.apply(this, arguments);
-    };
-
-    var spellcheckerEvents = 'SpellcheckStart SpellcheckEnd';
-    var buildMenuItems = function (listName, languageValues) {
-      var items = [];
-      global$1.each(languageValues, function (languageValue) {
-        items.push({
-          selectable: true,
-          text: languageValue.name,
-          data: languageValue.value
-        });
-      });
-      return items;
-    };
-    var getItems = function (editor) {
-      return global$1.map(getLanguages(editor).split(','), function (langPair) {
-        var langPairs = langPair.split('=');
-        return {
-          name: langPairs[0],
-          value: langPairs[1]
-        };
-      });
-    };
-    var register$1 = function (editor, pluginUrl, startedState, textMatcherState, currentLanguageState, lastSuggestionsState) {
-      var languageMenuItems = buildMenuItems('Language', getItems(editor));
-      var startSpellchecking = function () {
-        spellcheck(editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState);
-      };
-      var buttonArgs = {
-        tooltip: 'Spellcheck',
-        onAction: startSpellchecking,
-        icon: 'spell-check',
-        onSetup: function (buttonApi) {
-          var setButtonState = function () {
-            buttonApi.setActive(startedState.get());
-          };
-          editor.on(spellcheckerEvents, setButtonState);
-          return function () {
-            editor.off(spellcheckerEvents, setButtonState);
-          };
-        }
-      };
-      var splitButtonArgs = __assign(__assign({}, buttonArgs), {
-        type: 'splitbutton',
-        select: function (value) {
-          return value === currentLanguageState.get();
-        },
-        fetch: function (callback) {
-          var items = global$1.map(languageMenuItems, function (languageItem) {
-            return {
-              type: 'choiceitem',
-              value: languageItem.data,
-              text: languageItem.text
-            };
-          });
-          callback(items);
-        },
-        onItemAction: function (splitButtonApi, value) {
-          currentLanguageState.set(value);
-        }
-      });
-      if (languageMenuItems.length > 1) {
-        editor.ui.registry.addSplitButton('spellchecker', splitButtonArgs);
-      } else {
-        editor.ui.registry.addToggleButton('spellchecker', buttonArgs);
-      }
-      editor.ui.registry.addToggleMenuItem('spellchecker', {
-        text: 'Spellcheck',
-        icon: 'spell-check',
-        onSetup: function (menuApi) {
-          menuApi.setActive(startedState.get());
-          var setMenuItemCheck = function () {
-            menuApi.setActive(startedState.get());
-          };
-          editor.on(spellcheckerEvents, setMenuItemCheck);
-          return function () {
-            editor.off(spellcheckerEvents, setMenuItemCheck);
-          };
-        },
-        onAction: startSpellchecking
-      });
-    };
-
-    var ignoreAll = true;
-    var getSuggestions = function (editor, pluginUrl, lastSuggestionsState, startedState, textMatcherState, currentLanguageState, word, spans) {
-      var items = [];
-      var suggestions = lastSuggestionsState.get().suggestions[word];
-      global$1.each(suggestions, function (suggestion) {
-        items.push({
-          text: suggestion,
-          onAction: function () {
-            editor.insertContent(editor.dom.encode(suggestion));
-            editor.dom.remove(spans);
-            checkIfFinished(editor, startedState, textMatcherState);
-          }
-        });
-      });
-      var hasDictionarySupport = lastSuggestionsState.get().hasDictionarySupport;
-      if (hasDictionarySupport) {
-        items.push({ type: 'separator' });
-        items.push({
-          text: 'Add to dictionary',
-          onAction: function () {
-            addToDictionary(editor, pluginUrl, startedState, textMatcherState, currentLanguageState, word, spans);
-          }
-        });
-      }
-      items.push.apply(items, [
-        { type: 'separator' },
-        {
-          text: 'Ignore',
-          onAction: function () {
-            ignoreWord(editor, startedState, textMatcherState, word, spans);
-          }
-        },
-        {
-          text: 'Ignore all',
-          onAction: function () {
-            ignoreWord(editor, startedState, textMatcherState, word, spans, ignoreAll);
-          }
-        }
-      ]);
-      return items;
-    };
-    var setup = function (editor, pluginUrl, lastSuggestionsState, startedState, textMatcherState, currentLanguageState) {
-      var update = function (element) {
-        var target = element;
-        if (target.className === 'mce-spellchecker-word') {
-          var spans = findSpansByIndex(editor, getElmIndex(target));
-          if (spans.length > 0) {
-            var rng = editor.dom.createRng();
-            rng.setStartBefore(spans[0]);
-            rng.setEndAfter(spans[spans.length - 1]);
-            editor.selection.setRng(rng);
-            return getSuggestions(editor, pluginUrl, lastSuggestionsState, startedState, textMatcherState, currentLanguageState, target.getAttribute('data-mce-word'), spans);
-          }
-        } else {
-          return [];
-        }
-      };
-      editor.ui.registry.addContextMenu('spellchecker', { update: update });
-    };
-
-    function Plugin () {
-      global.add('spellchecker', function (editor, pluginUrl) {
-        if (hasProPlugin(editor) === false) {
-          var startedState = Cell(false);
-          var currentLanguageState = Cell(getLanguage(editor));
-          var textMatcherState = Cell(null);
-          var lastSuggestionsState = Cell(null);
-          register$1(editor, pluginUrl, startedState, textMatcherState, currentLanguageState, lastSuggestionsState);
-          setup(editor, pluginUrl, lastSuggestionsState, startedState, textMatcherState, currentLanguageState);
-          register(editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState);
-          return get(editor, startedState, lastSuggestionsState, textMatcherState, currentLanguageState);
-        }
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
     var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
 
     var global$1 = tinymce.util.Tools.resolve('tinymce.dom.DOMUtils');
 
-    var global$2 = tinymce.util.Tools.resolve('tinymce.EditorManager');
+    var global$2 = tinymce.util.Tools.resolve('tinymce.util.Tools');
 
-    var global$3 = tinymce.util.Tools.resolve('tinymce.Env');
-
-    var global$4 = tinymce.util.Tools.resolve('tinymce.util.Delay');
-
-    var global$5 = tinymce.util.Tools.resolve('tinymce.util.Tools');
-
-    var global$6 = tinymce.util.Tools.resolve('tinymce.util.VK');
-
-    var getTabFocusElements = function (editor) {
-      return editor.getParam('tabfocus_elements', ':prev,:next');
+    var enableWhenDirty = function (editor) {
+      return editor.getParam('save_enablewhendirty', true);
     };
-    var getTabFocus = function (editor) {
-      return editor.getParam('tab_focus', getTabFocusElements(editor));
+    var hasOnSaveCallback = function (editor) {
+      return !!editor.getParam('save_onsavecallback');
+    };
+    var hasOnCancelCallback = function (editor) {
+      return !!editor.getParam('save_oncancelcallback');
     };
 
-    var DOM = global$1.DOM;
-    var tabCancel = function (e) {
-      if (e.keyCode === global$6.TAB && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        e.preventDefault();
+    var displayErrorMessage = function (editor, message) {
+      editor.notificationManager.open({
+        text: message,
+        type: 'error'
+      });
+    };
+    var save = function (editor) {
+      var formObj = global$1.DOM.getParent(editor.id, 'form');
+      if (enableWhenDirty(editor) && !editor.isDirty()) {
+        return;
+      }
+      editor.save();
+      if (hasOnSaveCallback(editor)) {
+        editor.execCallback('save_onsavecallback', editor);
+        editor.nodeChanged();
+        return;
+      }
+      if (formObj) {
+        editor.setDirty(false);
+        if (!formObj.onsubmit || formObj.onsubmit()) {
+          if (typeof formObj.submit === 'function') {
+            formObj.submit();
+          } else {
+            displayErrorMessage(editor, 'Error: Form submit field collision.');
+          }
+        }
+        editor.nodeChanged();
+      } else {
+        displayErrorMessage(editor, 'Error: No form element found.');
       }
     };
-    var setup = function (editor) {
-      var tabHandler = function (e) {
-        var x, i;
-        if (e.keyCode !== global$6.TAB || e.ctrlKey || e.altKey || e.metaKey || e.isDefaultPrevented()) {
-          return;
-        }
-        var find = function (direction) {
-          var el = DOM.select(':input:enabled,*[tabindex]:not(iframe)');
-          var canSelectRecursive = function (e) {
-            return e.nodeName === 'BODY' || e.type !== 'hidden' && e.style.display !== 'none' && e.style.visibility !== 'hidden' && canSelectRecursive(e.parentNode);
-          };
-          var canSelect = function (el) {
-            return /INPUT|TEXTAREA|BUTTON/.test(el.tagName) && global$2.get(e.id) && el.tabIndex !== -1 && canSelectRecursive(el);
-          };
-          global$5.each(el, function (e, i) {
-            if (e.id === editor.id) {
-              x = i;
-              return false;
-            }
-          });
-          if (direction > 0) {
-            for (i = x + 1; i < el.length; i++) {
-              if (canSelect(el[i])) {
-                return el[i];
-              }
-            }
-          } else {
-            for (i = x - 1; i >= 0; i--) {
-              if (canSelect(el[i])) {
-                return el[i];
-              }
-            }
-          }
-          return null;
-        };
-        var v = global$5.explode(getTabFocus(editor));
-        if (v.length === 1) {
-          v[1] = v[0];
-          v[0] = ':prev';
-        }
-        var el;
-        if (e.shiftKey) {
-          if (v[0] === ':prev') {
-            el = find(-1);
-          } else {
-            el = DOM.get(v[0]);
-          }
-        } else {
-          if (v[1] === ':next') {
-            el = find(1);
-          } else {
-            el = DOM.get(v[1]);
-          }
-        }
-        if (el) {
-          var focusEditor = global$2.get(el.id || el.name);
-          if (el.id && focusEditor) {
-            focusEditor.focus();
-          } else {
-            global$4.setTimeout(function () {
-              if (!global$3.webkit) {
-                window.focus();
-              }
-              el.focus();
-            }, 10);
-          }
-          e.preventDefault();
-        }
-      };
-      editor.on('init', function () {
-        if (editor.inline) {
-          DOM.setAttrib(editor.getBody(), 'tabIndex', null);
-        }
-        editor.on('keyup', tabCancel);
-        if (global$3.gecko) {
-          editor.on('keypress keydown', tabHandler);
-        } else {
-          editor.on('keydown', tabHandler);
-        }
+    var cancel = function (editor) {
+      var h = global$2.trim(editor.startContent);
+      if (hasOnCancelCallback(editor)) {
+        editor.execCallback('save_oncancelcallback', editor);
+        return;
+      }
+      editor.resetContent(h);
+    };
+
+    var register = function (editor) {
+      editor.addCommand('mceSave', function () {
+        save(editor);
+      });
+      editor.addCommand('mceCancel', function () {
+        cancel(editor);
       });
     };
 
+    var stateToggle = function (editor) {
+      return function (api) {
+        var handler = function () {
+          api.setDisabled(enableWhenDirty(editor) && !editor.isDirty());
+        };
+        editor.on('NodeChange dirty', handler);
+        return function () {
+          return editor.off('NodeChange dirty', handler);
+        };
+      };
+    };
+    var register$1 = function (editor) {
+      editor.ui.registry.addButton('save', {
+        icon: 'save',
+        tooltip: 'Save',
+        disabled: true,
+        onAction: function () {
+          return editor.execCommand('mceSave');
+        },
+        onSetup: stateToggle(editor)
+      });
+      editor.ui.registry.addButton('cancel', {
+        icon: 'cancel',
+        tooltip: 'Cancel',
+        disabled: true,
+        onAction: function () {
+          return editor.execCommand('mceCancel');
+        },
+        onSetup: stateToggle(editor)
+      });
+      editor.addShortcut('Meta+S', '', 'mceSave');
+    };
+
     function Plugin () {
-      global.add('tabfocus', function (editor) {
-        setup(editor);
+      global.add('save', function (editor) {
+        register$1(editor);
+        register(editor);
       });
     }
 
@@ -68577,6 +67715,868 @@ tinymce.IconManager.add('default', {
         register(editor, currentSearchState);
         register$1(editor, currentSearchState);
         return get$1(editor, currentSearchState);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.dom.DOMUtils');
+
+    var global$2 = tinymce.util.Tools.resolve('tinymce.EditorManager');
+
+    var global$3 = tinymce.util.Tools.resolve('tinymce.Env');
+
+    var global$4 = tinymce.util.Tools.resolve('tinymce.util.Delay');
+
+    var global$5 = tinymce.util.Tools.resolve('tinymce.util.Tools');
+
+    var global$6 = tinymce.util.Tools.resolve('tinymce.util.VK');
+
+    var getTabFocusElements = function (editor) {
+      return editor.getParam('tabfocus_elements', ':prev,:next');
+    };
+    var getTabFocus = function (editor) {
+      return editor.getParam('tab_focus', getTabFocusElements(editor));
+    };
+
+    var DOM = global$1.DOM;
+    var tabCancel = function (e) {
+      if (e.keyCode === global$6.TAB && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+      }
+    };
+    var setup = function (editor) {
+      var tabHandler = function (e) {
+        var x, i;
+        if (e.keyCode !== global$6.TAB || e.ctrlKey || e.altKey || e.metaKey || e.isDefaultPrevented()) {
+          return;
+        }
+        var find = function (direction) {
+          var el = DOM.select(':input:enabled,*[tabindex]:not(iframe)');
+          var canSelectRecursive = function (e) {
+            return e.nodeName === 'BODY' || e.type !== 'hidden' && e.style.display !== 'none' && e.style.visibility !== 'hidden' && canSelectRecursive(e.parentNode);
+          };
+          var canSelect = function (el) {
+            return /INPUT|TEXTAREA|BUTTON/.test(el.tagName) && global$2.get(e.id) && el.tabIndex !== -1 && canSelectRecursive(el);
+          };
+          global$5.each(el, function (e, i) {
+            if (e.id === editor.id) {
+              x = i;
+              return false;
+            }
+          });
+          if (direction > 0) {
+            for (i = x + 1; i < el.length; i++) {
+              if (canSelect(el[i])) {
+                return el[i];
+              }
+            }
+          } else {
+            for (i = x - 1; i >= 0; i--) {
+              if (canSelect(el[i])) {
+                return el[i];
+              }
+            }
+          }
+          return null;
+        };
+        var v = global$5.explode(getTabFocus(editor));
+        if (v.length === 1) {
+          v[1] = v[0];
+          v[0] = ':prev';
+        }
+        var el;
+        if (e.shiftKey) {
+          if (v[0] === ':prev') {
+            el = find(-1);
+          } else {
+            el = DOM.get(v[0]);
+          }
+        } else {
+          if (v[1] === ':next') {
+            el = find(1);
+          } else {
+            el = DOM.get(v[1]);
+          }
+        }
+        if (el) {
+          var focusEditor = global$2.get(el.id || el.name);
+          if (el.id && focusEditor) {
+            focusEditor.focus();
+          } else {
+            global$4.setTimeout(function () {
+              if (!global$3.webkit) {
+                window.focus();
+              }
+              el.focus();
+            }, 10);
+          }
+          e.preventDefault();
+        }
+      };
+      editor.on('init', function () {
+        if (editor.inline) {
+          DOM.setAttrib(editor.getBody(), 'tabIndex', null);
+        }
+        editor.on('keyup', tabCancel);
+        if (global$3.gecko) {
+          editor.on('keypress keydown', tabHandler);
+        } else {
+          editor.on('keydown', tabHandler);
+        }
+      });
+    };
+
+    function Plugin () {
+      global.add('tabfocus', function (editor) {
+        setup(editor);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var Cell = function (initial) {
+      var value = initial;
+      var get = function () {
+        return value;
+      };
+      var set = function (v) {
+        value = v;
+      };
+      return {
+        get: get,
+        set: set
+      };
+    };
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var hasProPlugin = function (editor) {
+      if (editor.hasPlugin('tinymcespellchecker', true)) {
+        if (typeof window.console !== 'undefined' && window.console.log) {
+          window.console.log('Spell Checker Pro is incompatible with Spell Checker plugin! ' + 'Remove \'spellchecker\' from the \'plugins\' option.');
+        }
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    var hasOwnProperty = Object.hasOwnProperty;
+    var isEmpty = function (r) {
+      for (var x in r) {
+        if (hasOwnProperty.call(r, x)) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.util.Tools');
+
+    var global$2 = tinymce.util.Tools.resolve('tinymce.util.URI');
+
+    var global$3 = tinymce.util.Tools.resolve('tinymce.util.XHR');
+
+    var fireSpellcheckStart = function (editor) {
+      return editor.fire('SpellcheckStart');
+    };
+    var fireSpellcheckEnd = function (editor) {
+      return editor.fire('SpellcheckEnd');
+    };
+
+    var getLanguages = function (editor) {
+      var defaultLanguages = 'English=en,Danish=da,Dutch=nl,Finnish=fi,French=fr_FR,German=de,Italian=it,Polish=pl,Portuguese=pt_BR,Spanish=es,Swedish=sv';
+      return editor.getParam('spellchecker_languages', defaultLanguages);
+    };
+    var getLanguage = function (editor) {
+      var defaultLanguage = editor.getParam('language', 'en');
+      return editor.getParam('spellchecker_language', defaultLanguage);
+    };
+    var getRpcUrl = function (editor) {
+      return editor.getParam('spellchecker_rpc_url');
+    };
+    var getSpellcheckerCallback = function (editor) {
+      return editor.getParam('spellchecker_callback');
+    };
+    var getSpellcheckerWordcharPattern = function (editor) {
+      var defaultPattern = new RegExp('[^' + '\\s!"#$%&()*+,-./:;<=>?@[\\]^_{|}`' + '\xA7\xA9\xAB\xAE\xB1\xB6\xB7\xB8\xBB' + '\xBC\xBD\xBE\xBF\xD7\xF7\xA4\u201D\u201C\u201E\xA0\u2002\u2003\u2009' + ']+', 'g');
+      return editor.getParam('spellchecker_wordchar_pattern', defaultPattern);
+    };
+
+    var isContentEditableFalse = function (node) {
+      return node && node.nodeType === 1 && node.contentEditable === 'false';
+    };
+    var DomTextMatcher = function (node, editor) {
+      var m, matches = [];
+      var dom = editor.dom;
+      var blockElementsMap = editor.schema.getBlockElements();
+      var hiddenTextElementsMap = editor.schema.getWhiteSpaceElements();
+      var shortEndedElementsMap = editor.schema.getShortEndedElements();
+      var createMatch = function (m, data) {
+        if (!m[0]) {
+          throw new Error('findAndReplaceDOMText cannot handle zero-length matches');
+        }
+        return {
+          start: m.index,
+          end: m.index + m[0].length,
+          text: m[0],
+          data: data
+        };
+      };
+      var getText = function (node) {
+        var txt;
+        if (node.nodeType === 3) {
+          return node.data;
+        }
+        if (hiddenTextElementsMap[node.nodeName] && !blockElementsMap[node.nodeName]) {
+          return '';
+        }
+        if (isContentEditableFalse(node)) {
+          return '\n';
+        }
+        txt = '';
+        if (blockElementsMap[node.nodeName] || shortEndedElementsMap[node.nodeName]) {
+          txt += '\n';
+        }
+        if (node = node.firstChild) {
+          do {
+            txt += getText(node);
+          } while (node = node.nextSibling);
+        }
+        return txt;
+      };
+      var stepThroughMatches = function (node, matches, replaceFn) {
+        var startNode, endNode, startNodeIndex, endNodeIndex, innerNodes = [], atIndex = 0, curNode = node, matchLocation, matchIndex = 0;
+        matches = matches.slice(0);
+        matches.sort(function (a, b) {
+          return a.start - b.start;
+        });
+        matchLocation = matches.shift();
+        out:
+          while (true) {
+            if (blockElementsMap[curNode.nodeName] || shortEndedElementsMap[curNode.nodeName] || isContentEditableFalse(curNode)) {
+              atIndex++;
+            }
+            if (curNode.nodeType === 3) {
+              if (!endNode && curNode.length + atIndex >= matchLocation.end) {
+                endNode = curNode;
+                endNodeIndex = matchLocation.end - atIndex;
+              } else if (startNode) {
+                innerNodes.push(curNode);
+              }
+              if (!startNode && curNode.length + atIndex > matchLocation.start) {
+                startNode = curNode;
+                startNodeIndex = matchLocation.start - atIndex;
+              }
+              atIndex += curNode.length;
+            }
+            if (startNode && endNode) {
+              curNode = replaceFn({
+                startNode: startNode,
+                startNodeIndex: startNodeIndex,
+                endNode: endNode,
+                endNodeIndex: endNodeIndex,
+                innerNodes: innerNodes,
+                match: matchLocation.text,
+                matchIndex: matchIndex
+              });
+              atIndex -= endNode.length - endNodeIndex;
+              startNode = null;
+              endNode = null;
+              innerNodes = [];
+              matchLocation = matches.shift();
+              matchIndex++;
+              if (!matchLocation) {
+                break;
+              }
+            } else if ((!hiddenTextElementsMap[curNode.nodeName] || blockElementsMap[curNode.nodeName]) && curNode.firstChild) {
+              if (!isContentEditableFalse(curNode)) {
+                curNode = curNode.firstChild;
+                continue;
+              }
+            } else if (curNode.nextSibling) {
+              curNode = curNode.nextSibling;
+              continue;
+            }
+            while (true) {
+              if (curNode.nextSibling) {
+                curNode = curNode.nextSibling;
+                break;
+              } else if (curNode.parentNode !== node) {
+                curNode = curNode.parentNode;
+              } else {
+                break out;
+              }
+            }
+          }
+      };
+      var genReplacer = function (callback) {
+        var makeReplacementNode = function (fill, matchIndex) {
+          var match = matches[matchIndex];
+          if (!match.stencil) {
+            match.stencil = callback(match);
+          }
+          var clone = match.stencil.cloneNode(false);
+          clone.setAttribute('data-mce-index', matchIndex);
+          if (fill) {
+            clone.appendChild(dom.doc.createTextNode(fill));
+          }
+          return clone;
+        };
+        return function (range) {
+          var before;
+          var after;
+          var parentNode;
+          var startNode = range.startNode;
+          var endNode = range.endNode;
+          var matchIndex = range.matchIndex;
+          var doc = dom.doc;
+          if (startNode === endNode) {
+            var node_1 = startNode;
+            parentNode = node_1.parentNode;
+            if (range.startNodeIndex > 0) {
+              before = doc.createTextNode(node_1.data.substring(0, range.startNodeIndex));
+              parentNode.insertBefore(before, node_1);
+            }
+            var el = makeReplacementNode(range.match, matchIndex);
+            parentNode.insertBefore(el, node_1);
+            if (range.endNodeIndex < node_1.length) {
+              after = doc.createTextNode(node_1.data.substring(range.endNodeIndex));
+              parentNode.insertBefore(after, node_1);
+            }
+            node_1.parentNode.removeChild(node_1);
+            return el;
+          }
+          before = doc.createTextNode(startNode.data.substring(0, range.startNodeIndex));
+          after = doc.createTextNode(endNode.data.substring(range.endNodeIndex));
+          var elA = makeReplacementNode(startNode.data.substring(range.startNodeIndex), matchIndex);
+          for (var i = 0, l = range.innerNodes.length; i < l; ++i) {
+            var innerNode = range.innerNodes[i];
+            var innerEl = makeReplacementNode(innerNode.data, matchIndex);
+            innerNode.parentNode.replaceChild(innerEl, innerNode);
+          }
+          var elB = makeReplacementNode(endNode.data.substring(0, range.endNodeIndex), matchIndex);
+          parentNode = startNode.parentNode;
+          parentNode.insertBefore(before, startNode);
+          parentNode.insertBefore(elA, startNode);
+          parentNode.removeChild(startNode);
+          parentNode = endNode.parentNode;
+          parentNode.insertBefore(elB, endNode);
+          parentNode.insertBefore(after, endNode);
+          parentNode.removeChild(endNode);
+          return elB;
+        };
+      };
+      var unwrapElement = function (element) {
+        var parentNode = element.parentNode;
+        while (element.childNodes.length > 0) {
+          parentNode.insertBefore(element.childNodes[0], element);
+        }
+        parentNode.removeChild(element);
+      };
+      var hasClass = function (elm) {
+        return elm.className.indexOf('mce-spellchecker-word') !== -1;
+      };
+      var getWrappersByIndex = function (index) {
+        var elements = node.getElementsByTagName('*'), wrappers = [];
+        index = typeof index === 'number' ? '' + index : null;
+        for (var i = 0; i < elements.length; i++) {
+          var element = elements[i], dataIndex = element.getAttribute('data-mce-index');
+          if (dataIndex !== null && dataIndex.length && hasClass(element)) {
+            if (dataIndex === index || index === null) {
+              wrappers.push(element);
+            }
+          }
+        }
+        return wrappers;
+      };
+      var indexOf = function (match) {
+        var i = matches.length;
+        while (i--) {
+          if (matches[i] === match) {
+            return i;
+          }
+        }
+        return -1;
+      };
+      function filter(callback) {
+        var filteredMatches = [];
+        each(function (match, i) {
+          if (callback(match, i)) {
+            filteredMatches.push(match);
+          }
+        });
+        matches = filteredMatches;
+        return this;
+      }
+      function each(callback) {
+        for (var i = 0, l = matches.length; i < l; i++) {
+          if (callback(matches[i], i) === false) {
+            break;
+          }
+        }
+        return this;
+      }
+      function wrap(callback) {
+        if (matches.length) {
+          stepThroughMatches(node, matches, genReplacer(callback));
+        }
+        return this;
+      }
+      function find(regex, data) {
+        if (text && regex.global) {
+          while (m = regex.exec(text)) {
+            matches.push(createMatch(m, data));
+          }
+        }
+        return this;
+      }
+      function unwrap(match) {
+        var i;
+        var elements = getWrappersByIndex(match ? indexOf(match) : null);
+        i = elements.length;
+        while (i--) {
+          unwrapElement(elements[i]);
+        }
+        return this;
+      }
+      var matchFromElement = function (element) {
+        return matches[element.getAttribute('data-mce-index')];
+      };
+      var elementFromMatch = function (match) {
+        return getWrappersByIndex(indexOf(match))[0];
+      };
+      function add(start, length, data) {
+        matches.push({
+          start: start,
+          end: start + length,
+          text: text.substr(start, length),
+          data: data
+        });
+        return this;
+      }
+      var rangeFromMatch = function (match) {
+        var wrappers = getWrappersByIndex(indexOf(match));
+        var rng = editor.dom.createRng();
+        rng.setStartBefore(wrappers[0]);
+        rng.setEndAfter(wrappers[wrappers.length - 1]);
+        return rng;
+      };
+      var replace = function (match, text) {
+        var rng = rangeFromMatch(match);
+        rng.deleteContents();
+        if (text.length > 0) {
+          rng.insertNode(editor.dom.doc.createTextNode(text));
+        }
+        return rng;
+      };
+      function reset() {
+        matches.splice(0, matches.length);
+        unwrap();
+        return this;
+      }
+      var text = getText(node);
+      return {
+        text: text,
+        matches: matches,
+        each: each,
+        filter: filter,
+        reset: reset,
+        matchFromElement: matchFromElement,
+        elementFromMatch: elementFromMatch,
+        find: find,
+        add: add,
+        wrap: wrap,
+        unwrap: unwrap,
+        replace: replace,
+        rangeFromMatch: rangeFromMatch,
+        indexOf: indexOf
+      };
+    };
+
+    var getTextMatcher = function (editor, textMatcherState) {
+      if (!textMatcherState.get()) {
+        var textMatcher = DomTextMatcher(editor.getBody(), editor);
+        textMatcherState.set(textMatcher);
+      }
+      return textMatcherState.get();
+    };
+    var defaultSpellcheckCallback = function (editor, pluginUrl, currentLanguageState) {
+      return function (method, text, doneCallback, errorCallback) {
+        var data = {
+          method: method,
+          lang: currentLanguageState.get()
+        };
+        var postData = '';
+        data[method === 'addToDictionary' ? 'word' : 'text'] = text;
+        global$1.each(data, function (value, key) {
+          if (postData) {
+            postData += '&';
+          }
+          postData += key + '=' + encodeURIComponent(value);
+        });
+        global$3.send({
+          url: new global$2(pluginUrl).toAbsolute(getRpcUrl(editor)),
+          type: 'post',
+          content_type: 'application/x-www-form-urlencoded',
+          data: postData,
+          success: function (result) {
+            var parseResult = JSON.parse(result);
+            if (!parseResult) {
+              var message = editor.translate('Server response wasn\'t proper JSON.');
+              errorCallback(message);
+            } else if (parseResult.error) {
+              errorCallback(parseResult.error);
+            } else {
+              doneCallback(parseResult);
+            }
+          },
+          error: function () {
+            var message = editor.translate('The spelling service was not found: (') + getRpcUrl(editor) + editor.translate(')');
+            errorCallback(message);
+          }
+        });
+      };
+    };
+    var sendRpcCall = function (editor, pluginUrl, currentLanguageState, name, data, successCallback, errorCallback) {
+      var userSpellcheckCallback = getSpellcheckerCallback(editor);
+      var spellCheckCallback = userSpellcheckCallback ? userSpellcheckCallback : defaultSpellcheckCallback(editor, pluginUrl, currentLanguageState);
+      spellCheckCallback.call(editor.plugins.spellchecker, name, data, successCallback, errorCallback);
+    };
+    var spellcheck = function (editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState) {
+      if (finish(editor, startedState, textMatcherState)) {
+        return;
+      }
+      var errorCallback = function (message) {
+        editor.notificationManager.open({
+          text: message,
+          type: 'error'
+        });
+        editor.setProgressState(false);
+        finish(editor, startedState, textMatcherState);
+      };
+      var successCallback = function (data) {
+        markErrors(editor, startedState, textMatcherState, lastSuggestionsState, data);
+      };
+      editor.setProgressState(true);
+      sendRpcCall(editor, pluginUrl, currentLanguageState, 'spellcheck', getTextMatcher(editor, textMatcherState).text, successCallback, errorCallback);
+      editor.focus();
+    };
+    var checkIfFinished = function (editor, startedState, textMatcherState) {
+      if (!editor.dom.select('span.mce-spellchecker-word').length) {
+        finish(editor, startedState, textMatcherState);
+      }
+    };
+    var addToDictionary = function (editor, pluginUrl, startedState, textMatcherState, currentLanguageState, word, spans) {
+      editor.setProgressState(true);
+      sendRpcCall(editor, pluginUrl, currentLanguageState, 'addToDictionary', word, function () {
+        editor.setProgressState(false);
+        editor.dom.remove(spans, true);
+        checkIfFinished(editor, startedState, textMatcherState);
+      }, function (message) {
+        editor.notificationManager.open({
+          text: message,
+          type: 'error'
+        });
+        editor.setProgressState(false);
+      });
+    };
+    var ignoreWord = function (editor, startedState, textMatcherState, word, spans, all) {
+      editor.selection.collapse();
+      if (all) {
+        global$1.each(editor.dom.select('span.mce-spellchecker-word'), function (span) {
+          if (span.getAttribute('data-mce-word') === word) {
+            editor.dom.remove(span, true);
+          }
+        });
+      } else {
+        editor.dom.remove(spans, true);
+      }
+      checkIfFinished(editor, startedState, textMatcherState);
+    };
+    var finish = function (editor, startedState, textMatcherState) {
+      var bookmark = editor.selection.getBookmark();
+      getTextMatcher(editor, textMatcherState).reset();
+      editor.selection.moveToBookmark(bookmark);
+      textMatcherState.set(null);
+      if (startedState.get()) {
+        startedState.set(false);
+        fireSpellcheckEnd(editor);
+        return true;
+      }
+    };
+    var getElmIndex = function (elm) {
+      var value = elm.getAttribute('data-mce-index');
+      if (typeof value === 'number') {
+        return '' + value;
+      }
+      return value;
+    };
+    var findSpansByIndex = function (editor, index) {
+      var spans = [];
+      var nodes = global$1.toArray(editor.getBody().getElementsByTagName('span'));
+      if (nodes.length) {
+        for (var i = 0; i < nodes.length; i++) {
+          var nodeIndex = getElmIndex(nodes[i]);
+          if (nodeIndex === null || !nodeIndex.length) {
+            continue;
+          }
+          if (nodeIndex === index.toString()) {
+            spans.push(nodes[i]);
+          }
+        }
+      }
+      return spans;
+    };
+    var markErrors = function (editor, startedState, textMatcherState, lastSuggestionsState, data) {
+      var hasDictionarySupport = !!data.dictionary;
+      var suggestions = data.words;
+      editor.setProgressState(false);
+      if (isEmpty(suggestions)) {
+        var message = editor.translate('No misspellings found.');
+        editor.notificationManager.open({
+          text: message,
+          type: 'info'
+        });
+        startedState.set(false);
+        return;
+      }
+      lastSuggestionsState.set({
+        suggestions: suggestions,
+        hasDictionarySupport: hasDictionarySupport
+      });
+      var bookmark = editor.selection.getBookmark();
+      getTextMatcher(editor, textMatcherState).find(getSpellcheckerWordcharPattern(editor)).filter(function (match) {
+        return !!suggestions[match.text];
+      }).wrap(function (match) {
+        return editor.dom.create('span', {
+          'class': 'mce-spellchecker-word',
+          'aria-invalid': 'spelling',
+          'data-mce-bogus': 1,
+          'data-mce-word': match.text
+        });
+      });
+      editor.selection.moveToBookmark(bookmark);
+      startedState.set(true);
+      fireSpellcheckStart(editor);
+    };
+
+    var get = function (editor, startedState, lastSuggestionsState, textMatcherState, currentLanguageState, _url) {
+      var getWordCharPattern = function () {
+        return getSpellcheckerWordcharPattern(editor);
+      };
+      var markErrors$1 = function (data) {
+        markErrors(editor, startedState, textMatcherState, lastSuggestionsState, data);
+      };
+      return {
+        getTextMatcher: textMatcherState.get,
+        getWordCharPattern: getWordCharPattern,
+        markErrors: markErrors$1,
+        getLanguage: currentLanguageState.get
+      };
+    };
+
+    var register = function (editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState) {
+      editor.addCommand('mceSpellCheck', function () {
+        spellcheck(editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState);
+      });
+    };
+
+    var __assign = function () {
+      __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s)
+            if (Object.prototype.hasOwnProperty.call(s, p))
+              t[p] = s[p];
+        }
+        return t;
+      };
+      return __assign.apply(this, arguments);
+    };
+
+    var spellcheckerEvents = 'SpellcheckStart SpellcheckEnd';
+    var buildMenuItems = function (listName, languageValues) {
+      var items = [];
+      global$1.each(languageValues, function (languageValue) {
+        items.push({
+          selectable: true,
+          text: languageValue.name,
+          data: languageValue.value
+        });
+      });
+      return items;
+    };
+    var getItems = function (editor) {
+      return global$1.map(getLanguages(editor).split(','), function (langPair) {
+        var langPairs = langPair.split('=');
+        return {
+          name: langPairs[0],
+          value: langPairs[1]
+        };
+      });
+    };
+    var register$1 = function (editor, pluginUrl, startedState, textMatcherState, currentLanguageState, lastSuggestionsState) {
+      var languageMenuItems = buildMenuItems('Language', getItems(editor));
+      var startSpellchecking = function () {
+        spellcheck(editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState);
+      };
+      var buttonArgs = {
+        tooltip: 'Spellcheck',
+        onAction: startSpellchecking,
+        icon: 'spell-check',
+        onSetup: function (buttonApi) {
+          var setButtonState = function () {
+            buttonApi.setActive(startedState.get());
+          };
+          editor.on(spellcheckerEvents, setButtonState);
+          return function () {
+            editor.off(spellcheckerEvents, setButtonState);
+          };
+        }
+      };
+      var splitButtonArgs = __assign(__assign({}, buttonArgs), {
+        type: 'splitbutton',
+        select: function (value) {
+          return value === currentLanguageState.get();
+        },
+        fetch: function (callback) {
+          var items = global$1.map(languageMenuItems, function (languageItem) {
+            return {
+              type: 'choiceitem',
+              value: languageItem.data,
+              text: languageItem.text
+            };
+          });
+          callback(items);
+        },
+        onItemAction: function (splitButtonApi, value) {
+          currentLanguageState.set(value);
+        }
+      });
+      if (languageMenuItems.length > 1) {
+        editor.ui.registry.addSplitButton('spellchecker', splitButtonArgs);
+      } else {
+        editor.ui.registry.addToggleButton('spellchecker', buttonArgs);
+      }
+      editor.ui.registry.addToggleMenuItem('spellchecker', {
+        text: 'Spellcheck',
+        icon: 'spell-check',
+        onSetup: function (menuApi) {
+          menuApi.setActive(startedState.get());
+          var setMenuItemCheck = function () {
+            menuApi.setActive(startedState.get());
+          };
+          editor.on(spellcheckerEvents, setMenuItemCheck);
+          return function () {
+            editor.off(spellcheckerEvents, setMenuItemCheck);
+          };
+        },
+        onAction: startSpellchecking
+      });
+    };
+
+    var ignoreAll = true;
+    var getSuggestions = function (editor, pluginUrl, lastSuggestionsState, startedState, textMatcherState, currentLanguageState, word, spans) {
+      var items = [];
+      var suggestions = lastSuggestionsState.get().suggestions[word];
+      global$1.each(suggestions, function (suggestion) {
+        items.push({
+          text: suggestion,
+          onAction: function () {
+            editor.insertContent(editor.dom.encode(suggestion));
+            editor.dom.remove(spans);
+            checkIfFinished(editor, startedState, textMatcherState);
+          }
+        });
+      });
+      var hasDictionarySupport = lastSuggestionsState.get().hasDictionarySupport;
+      if (hasDictionarySupport) {
+        items.push({ type: 'separator' });
+        items.push({
+          text: 'Add to dictionary',
+          onAction: function () {
+            addToDictionary(editor, pluginUrl, startedState, textMatcherState, currentLanguageState, word, spans);
+          }
+        });
+      }
+      items.push.apply(items, [
+        { type: 'separator' },
+        {
+          text: 'Ignore',
+          onAction: function () {
+            ignoreWord(editor, startedState, textMatcherState, word, spans);
+          }
+        },
+        {
+          text: 'Ignore all',
+          onAction: function () {
+            ignoreWord(editor, startedState, textMatcherState, word, spans, ignoreAll);
+          }
+        }
+      ]);
+      return items;
+    };
+    var setup = function (editor, pluginUrl, lastSuggestionsState, startedState, textMatcherState, currentLanguageState) {
+      var update = function (element) {
+        var target = element;
+        if (target.className === 'mce-spellchecker-word') {
+          var spans = findSpansByIndex(editor, getElmIndex(target));
+          if (spans.length > 0) {
+            var rng = editor.dom.createRng();
+            rng.setStartBefore(spans[0]);
+            rng.setEndAfter(spans[spans.length - 1]);
+            editor.selection.setRng(rng);
+            return getSuggestions(editor, pluginUrl, lastSuggestionsState, startedState, textMatcherState, currentLanguageState, target.getAttribute('data-mce-word'), spans);
+          }
+        } else {
+          return [];
+        }
+      };
+      editor.ui.registry.addContextMenu('spellchecker', { update: update });
+    };
+
+    function Plugin () {
+      global.add('spellchecker', function (editor, pluginUrl) {
+        if (hasProPlugin(editor) === false) {
+          var startedState = Cell(false);
+          var currentLanguageState = Cell(getLanguage(editor));
+          var textMatcherState = Cell(null);
+          var lastSuggestionsState = Cell(null);
+          register$1(editor, pluginUrl, startedState, textMatcherState, currentLanguageState, lastSuggestionsState);
+          setup(editor, pluginUrl, lastSuggestionsState, startedState, textMatcherState, currentLanguageState);
+          register(editor, pluginUrl, startedState, textMatcherState, lastSuggestionsState, currentLanguageState);
+          return get(editor, startedState, lastSuggestionsState, textMatcherState, currentLanguageState);
+        }
       });
     }
 
@@ -80140,243 +80140,6 @@ tinymce.IconManager.add('default', {
 (function () {
     'use strict';
 
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.dom.DOMUtils');
-
-    var global$2 = tinymce.util.Tools.resolve('tinymce.util.I18n');
-
-    var global$3 = tinymce.util.Tools.resolve('tinymce.util.Tools');
-
-    var getTocClass = function (editor) {
-      return editor.getParam('toc_class', 'mce-toc');
-    };
-    var getTocHeader = function (editor) {
-      var tagName = editor.getParam('toc_header', 'h2');
-      return /^h[1-6]$/.test(tagName) ? tagName : 'h2';
-    };
-    var getTocDepth = function (editor) {
-      var depth = parseInt(editor.getParam('toc_depth', '3'), 10);
-      return depth >= 1 && depth <= 9 ? depth : 3;
-    };
-
-    var create = function (prefix) {
-      var counter = 0;
-      return function () {
-        var guid = new Date().getTime().toString(32);
-        return prefix + guid + (counter++).toString(32);
-      };
-    };
-
-    var tocId = create('mcetoc_');
-    var generateSelector = function (depth) {
-      var i;
-      var selector = [];
-      for (i = 1; i <= depth; i++) {
-        selector.push('h' + i);
-      }
-      return selector.join(',');
-    };
-    var hasHeaders = function (editor) {
-      return readHeaders(editor).length > 0;
-    };
-    var readHeaders = function (editor) {
-      var tocClass = getTocClass(editor);
-      var headerTag = getTocHeader(editor);
-      var selector = generateSelector(getTocDepth(editor));
-      var headers = editor.$(selector);
-      if (headers.length && /^h[1-9]$/i.test(headerTag)) {
-        headers = headers.filter(function (i, el) {
-          return !editor.dom.hasClass(el.parentNode, tocClass);
-        });
-      }
-      return global$3.map(headers, function (h) {
-        var id = h.id;
-        return {
-          id: id ? id : tocId(),
-          level: parseInt(h.nodeName.replace(/^H/i, ''), 10),
-          title: editor.$.text(h),
-          element: h
-        };
-      });
-    };
-    var getMinLevel = function (headers) {
-      var i, minLevel = 9;
-      for (i = 0; i < headers.length; i++) {
-        if (headers[i].level < minLevel) {
-          minLevel = headers[i].level;
-        }
-        if (minLevel === 1) {
-          return minLevel;
-        }
-      }
-      return minLevel;
-    };
-    var generateTitle = function (tag, title) {
-      var openTag = '<' + tag + ' contenteditable="true">';
-      var closeTag = '</' + tag + '>';
-      return openTag + global$1.DOM.encode(title) + closeTag;
-    };
-    var generateTocHtml = function (editor) {
-      var html = generateTocContentHtml(editor);
-      return '<div class="' + editor.dom.encode(getTocClass(editor)) + '" contenteditable="false">' + html + '</div>';
-    };
-    var generateTocContentHtml = function (editor) {
-      var html = '';
-      var headers = readHeaders(editor);
-      var prevLevel = getMinLevel(headers) - 1;
-      var i, ii, h, nextLevel;
-      if (!headers.length) {
-        return '';
-      }
-      html += generateTitle(getTocHeader(editor), global$2.translate('Table of Contents'));
-      for (i = 0; i < headers.length; i++) {
-        h = headers[i];
-        h.element.id = h.id;
-        nextLevel = headers[i + 1] && headers[i + 1].level;
-        if (prevLevel === h.level) {
-          html += '<li>';
-        } else {
-          for (ii = prevLevel; ii < h.level; ii++) {
-            html += '<ul><li>';
-          }
-        }
-        html += '<a href="#' + h.id + '">' + h.title + '</a>';
-        if (nextLevel === h.level || !nextLevel) {
-          html += '</li>';
-          if (!nextLevel) {
-            html += '</ul>';
-          }
-        } else {
-          for (ii = h.level; ii > nextLevel; ii--) {
-            html += '</li></ul><li>';
-          }
-        }
-        prevLevel = h.level;
-      }
-      return html;
-    };
-    var isEmptyOrOffscren = function (editor, nodes) {
-      return !nodes.length || editor.dom.getParents(nodes[0], '.mce-offscreen-selection').length > 0;
-    };
-    var insertToc = function (editor) {
-      var tocClass = getTocClass(editor);
-      var $tocElm = editor.$('.' + tocClass);
-      if (isEmptyOrOffscren(editor, $tocElm)) {
-        editor.insertContent(generateTocHtml(editor));
-      } else {
-        updateToc(editor);
-      }
-    };
-    var updateToc = function (editor) {
-      var tocClass = getTocClass(editor);
-      var $tocElm = editor.$('.' + tocClass);
-      if ($tocElm.length) {
-        editor.undoManager.transact(function () {
-          $tocElm.html(generateTocContentHtml(editor));
-        });
-      }
-    };
-
-    var register = function (editor) {
-      editor.addCommand('mceInsertToc', function () {
-        insertToc(editor);
-      });
-      editor.addCommand('mceUpdateToc', function () {
-        updateToc(editor);
-      });
-    };
-
-    var setup = function (editor) {
-      var $ = editor.$, tocClass = getTocClass(editor);
-      editor.on('PreProcess', function (e) {
-        var $tocElm = $('.' + tocClass, e.node);
-        if ($tocElm.length) {
-          $tocElm.removeAttr('contentEditable');
-          $tocElm.find('[contenteditable]').removeAttr('contentEditable');
-        }
-      });
-      editor.on('SetContent', function () {
-        var $tocElm = $('.' + tocClass);
-        if ($tocElm.length) {
-          $tocElm.attr('contentEditable', false);
-          $tocElm.children(':first-child').attr('contentEditable', true);
-        }
-      });
-    };
-
-    var toggleState = function (editor) {
-      return function (api) {
-        var toggleDisabledState = function () {
-          return api.setDisabled(editor.mode.isReadOnly() || !hasHeaders(editor));
-        };
-        toggleDisabledState();
-        editor.on('LoadContent SetContent change', toggleDisabledState);
-        return function () {
-          return editor.on('LoadContent SetContent change', toggleDisabledState);
-        };
-      };
-    };
-    var isToc = function (editor) {
-      return function (elm) {
-        return elm && editor.dom.is(elm, '.' + getTocClass(editor)) && editor.getBody().contains(elm);
-      };
-    };
-    var register$1 = function (editor) {
-      editor.ui.registry.addButton('toc', {
-        icon: 'toc',
-        tooltip: 'Table of contents',
-        onAction: function () {
-          return editor.execCommand('mceInsertToc');
-        },
-        onSetup: toggleState(editor)
-      });
-      editor.ui.registry.addButton('tocupdate', {
-        icon: 'reload',
-        tooltip: 'Update',
-        onAction: function () {
-          return editor.execCommand('mceUpdateToc');
-        }
-      });
-      editor.ui.registry.addMenuItem('toc', {
-        icon: 'toc',
-        text: 'Table of contents',
-        onAction: function () {
-          return editor.execCommand('mceInsertToc');
-        },
-        onSetup: toggleState(editor)
-      });
-      editor.ui.registry.addContextToolbar('toc', {
-        items: 'tocupdate',
-        predicate: isToc(editor),
-        scope: 'node',
-        position: 'node'
-      });
-    };
-
-    function Plugin () {
-      global.add('toc', function (editor) {
-        register(editor);
-        register$1(editor);
-        setup(editor);
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
     var Cell = function (initial) {
       var value = initial;
       var get = function () {
@@ -81772,6 +81535,243 @@ tinymce.IconManager.add('default', {
 (function () {
     'use strict';
 
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.dom.DOMUtils');
+
+    var global$2 = tinymce.util.Tools.resolve('tinymce.util.I18n');
+
+    var global$3 = tinymce.util.Tools.resolve('tinymce.util.Tools');
+
+    var getTocClass = function (editor) {
+      return editor.getParam('toc_class', 'mce-toc');
+    };
+    var getTocHeader = function (editor) {
+      var tagName = editor.getParam('toc_header', 'h2');
+      return /^h[1-6]$/.test(tagName) ? tagName : 'h2';
+    };
+    var getTocDepth = function (editor) {
+      var depth = parseInt(editor.getParam('toc_depth', '3'), 10);
+      return depth >= 1 && depth <= 9 ? depth : 3;
+    };
+
+    var create = function (prefix) {
+      var counter = 0;
+      return function () {
+        var guid = new Date().getTime().toString(32);
+        return prefix + guid + (counter++).toString(32);
+      };
+    };
+
+    var tocId = create('mcetoc_');
+    var generateSelector = function (depth) {
+      var i;
+      var selector = [];
+      for (i = 1; i <= depth; i++) {
+        selector.push('h' + i);
+      }
+      return selector.join(',');
+    };
+    var hasHeaders = function (editor) {
+      return readHeaders(editor).length > 0;
+    };
+    var readHeaders = function (editor) {
+      var tocClass = getTocClass(editor);
+      var headerTag = getTocHeader(editor);
+      var selector = generateSelector(getTocDepth(editor));
+      var headers = editor.$(selector);
+      if (headers.length && /^h[1-9]$/i.test(headerTag)) {
+        headers = headers.filter(function (i, el) {
+          return !editor.dom.hasClass(el.parentNode, tocClass);
+        });
+      }
+      return global$3.map(headers, function (h) {
+        var id = h.id;
+        return {
+          id: id ? id : tocId(),
+          level: parseInt(h.nodeName.replace(/^H/i, ''), 10),
+          title: editor.$.text(h),
+          element: h
+        };
+      });
+    };
+    var getMinLevel = function (headers) {
+      var i, minLevel = 9;
+      for (i = 0; i < headers.length; i++) {
+        if (headers[i].level < minLevel) {
+          minLevel = headers[i].level;
+        }
+        if (minLevel === 1) {
+          return minLevel;
+        }
+      }
+      return minLevel;
+    };
+    var generateTitle = function (tag, title) {
+      var openTag = '<' + tag + ' contenteditable="true">';
+      var closeTag = '</' + tag + '>';
+      return openTag + global$1.DOM.encode(title) + closeTag;
+    };
+    var generateTocHtml = function (editor) {
+      var html = generateTocContentHtml(editor);
+      return '<div class="' + editor.dom.encode(getTocClass(editor)) + '" contenteditable="false">' + html + '</div>';
+    };
+    var generateTocContentHtml = function (editor) {
+      var html = '';
+      var headers = readHeaders(editor);
+      var prevLevel = getMinLevel(headers) - 1;
+      var i, ii, h, nextLevel;
+      if (!headers.length) {
+        return '';
+      }
+      html += generateTitle(getTocHeader(editor), global$2.translate('Table of Contents'));
+      for (i = 0; i < headers.length; i++) {
+        h = headers[i];
+        h.element.id = h.id;
+        nextLevel = headers[i + 1] && headers[i + 1].level;
+        if (prevLevel === h.level) {
+          html += '<li>';
+        } else {
+          for (ii = prevLevel; ii < h.level; ii++) {
+            html += '<ul><li>';
+          }
+        }
+        html += '<a href="#' + h.id + '">' + h.title + '</a>';
+        if (nextLevel === h.level || !nextLevel) {
+          html += '</li>';
+          if (!nextLevel) {
+            html += '</ul>';
+          }
+        } else {
+          for (ii = h.level; ii > nextLevel; ii--) {
+            html += '</li></ul><li>';
+          }
+        }
+        prevLevel = h.level;
+      }
+      return html;
+    };
+    var isEmptyOrOffscren = function (editor, nodes) {
+      return !nodes.length || editor.dom.getParents(nodes[0], '.mce-offscreen-selection').length > 0;
+    };
+    var insertToc = function (editor) {
+      var tocClass = getTocClass(editor);
+      var $tocElm = editor.$('.' + tocClass);
+      if (isEmptyOrOffscren(editor, $tocElm)) {
+        editor.insertContent(generateTocHtml(editor));
+      } else {
+        updateToc(editor);
+      }
+    };
+    var updateToc = function (editor) {
+      var tocClass = getTocClass(editor);
+      var $tocElm = editor.$('.' + tocClass);
+      if ($tocElm.length) {
+        editor.undoManager.transact(function () {
+          $tocElm.html(generateTocContentHtml(editor));
+        });
+      }
+    };
+
+    var register = function (editor) {
+      editor.addCommand('mceInsertToc', function () {
+        insertToc(editor);
+      });
+      editor.addCommand('mceUpdateToc', function () {
+        updateToc(editor);
+      });
+    };
+
+    var setup = function (editor) {
+      var $ = editor.$, tocClass = getTocClass(editor);
+      editor.on('PreProcess', function (e) {
+        var $tocElm = $('.' + tocClass, e.node);
+        if ($tocElm.length) {
+          $tocElm.removeAttr('contentEditable');
+          $tocElm.find('[contenteditable]').removeAttr('contentEditable');
+        }
+      });
+      editor.on('SetContent', function () {
+        var $tocElm = $('.' + tocClass);
+        if ($tocElm.length) {
+          $tocElm.attr('contentEditable', false);
+          $tocElm.children(':first-child').attr('contentEditable', true);
+        }
+      });
+    };
+
+    var toggleState = function (editor) {
+      return function (api) {
+        var toggleDisabledState = function () {
+          return api.setDisabled(editor.mode.isReadOnly() || !hasHeaders(editor));
+        };
+        toggleDisabledState();
+        editor.on('LoadContent SetContent change', toggleDisabledState);
+        return function () {
+          return editor.on('LoadContent SetContent change', toggleDisabledState);
+        };
+      };
+    };
+    var isToc = function (editor) {
+      return function (elm) {
+        return elm && editor.dom.is(elm, '.' + getTocClass(editor)) && editor.getBody().contains(elm);
+      };
+    };
+    var register$1 = function (editor) {
+      editor.ui.registry.addButton('toc', {
+        icon: 'toc',
+        tooltip: 'Table of contents',
+        onAction: function () {
+          return editor.execCommand('mceInsertToc');
+        },
+        onSetup: toggleState(editor)
+      });
+      editor.ui.registry.addButton('tocupdate', {
+        icon: 'reload',
+        tooltip: 'Update',
+        onAction: function () {
+          return editor.execCommand('mceUpdateToc');
+        }
+      });
+      editor.ui.registry.addMenuItem('toc', {
+        icon: 'toc',
+        text: 'Table of contents',
+        onAction: function () {
+          return editor.execCommand('mceInsertToc');
+        },
+        onSetup: toggleState(editor)
+      });
+      editor.ui.registry.addContextToolbar('toc', {
+        items: 'tocupdate',
+        predicate: isToc(editor),
+        scope: 'node',
+        position: 'node'
+      });
+    };
+
+    function Plugin () {
+      global.add('toc', function (editor) {
+        register(editor);
+        register$1(editor);
+        setup(editor);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
     var Cell = function (initial) {
       var value = initial;
       var get = function () {
@@ -81859,6 +81859,423 @@ tinymce.IconManager.add('default', {
         register(editor, pluginUrl, enabledState);
         register$1(editor, enabledState);
         setup(editor, pluginUrl, enabledState);
+      });
+    }
+
+    Plugin();
+
+}());
+
+/**
+ * Copyright (c) Tiny Technologies, Inc. All rights reserved.
+ * Licensed under the LGPL or a commercial license.
+ * For LGPL see License.txt in the project root for license information.
+ * For commercial licenses see https://www.tiny.cloud/
+ *
+ * Version: 5.8.2 (2021-06-23)
+ */
+(function () {
+    'use strict';
+
+    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
+
+    var identity = function (x) {
+      return x;
+    };
+
+    var __assign = function () {
+      __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s)
+            if (Object.prototype.hasOwnProperty.call(s, p))
+              t[p] = s[p];
+        }
+        return t;
+      };
+      return __assign.apply(this, arguments);
+    };
+
+    var zeroWidth = '\uFEFF';
+    var removeZwsp = function (s) {
+      return s.replace(/\uFEFF/g, '');
+    };
+
+    var map = function (xs, f) {
+      var len = xs.length;
+      var r = new Array(len);
+      for (var i = 0; i < len; i++) {
+        var x = xs[i];
+        r[i] = f(x, i);
+      }
+      return r;
+    };
+
+    var punctuationStr = '[!-#%-*,-\\/:;?@\\[-\\]_{}\xA1\xAB\xB7\xBB\xBF;\xB7\u055A-\u055F\u0589\u058A\u05BE\u05C0\u05C3\u05C6\u05F3\u05F4\u0609\u060A\u060C\u060D\u061B\u061E\u061F\u066A-\u066D\u06D4\u0700-\u070D\u07F7-\u07F9\u0830-\u083E\u085E\u0964\u0965\u0970\u0DF4\u0E4F\u0E5A\u0E5B\u0F04-\u0F12\u0F3A-\u0F3D\u0F85\u0FD0-\u0FD4\u0FD9\u0FDA\u104A-\u104F\u10FB\u1361-\u1368\u1400\u166D\u166E\u169B\u169C\u16EB-\u16ED\u1735\u1736\u17D4-\u17D6\u17D8-\u17DA\u1800-\u180A\u1944\u1945\u1A1E\u1A1F\u1AA0-\u1AA6\u1AA8-\u1AAD\u1B5A-\u1B60\u1BFC-\u1BFF\u1C3B-\u1C3F\u1C7E\u1C7F\u1CD3\u2010-\u2027\u2030-\u2043\u2045-\u2051\u2053-\u205E\u207D\u207E\u208D\u208E\u3008\u3009\u2768-\u2775\u27C5\u27C6\u27E6-\u27EF\u2983-\u2998\u29D8-\u29DB\u29FC\u29FD\u2CF9-\u2CFC\u2CFE\u2CFF\u2D70\u2E00-\u2E2E\u2E30\u2E31\u3001-\u3003\u3008-\u3011\u3014-\u301F\u3030\u303D\u30A0\u30FB\uA4FE\uA4FF\uA60D-\uA60F\uA673\uA67E\uA6F2-\uA6F7\uA874-\uA877\uA8CE\uA8CF\uA8F8-\uA8FA\uA92E\uA92F\uA95F\uA9C1-\uA9CD\uA9DE\uA9DF\uAA5C-\uAA5F\uAADE\uAADF\uABEB\uFD3E\uFD3F\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE61\uFE63\uFE68\uFE6A\uFE6B\uFF01-\uFF03\uFF05-\uFF0A\uFF0C-\uFF0F\uFF1A\uFF1B\uFF1F\uFF20\uFF3B-\uFF3D\uff3f\uFF5B\uFF5D\uFF5F-\uFF65]';
+    var regExps = {
+      aletter: '[A-Za-z\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u0527\u0531-\u0556\u0559\u0561-\u0587\u05d0-\u05ea\u05f0-\u05F3\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0977\u0979-\u097f\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c33\u0c35-\u0c39\u0c3d\u0c58\u0c59\u0c60\u0c61\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d60\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u10a0-\u10c5\u10d0-\u10fa\u10fc\u1100-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f4\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f0\u1700-\u170c\u170e-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1820-\u1877\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191c\u1a00-\u1a16\u1b05-\u1b33\u1b45-\u1b4b\u1b83-\u1ba0\u1bae\u1baf\u1bc0-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1ce9-\u1cec\u1cee-\u1cf1\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2119-\u211d\u2124\u2126\u2128\u212a-\u212d\u212f-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u24B6-\u24E9\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb-\u2cee\u2d00-\u2d25\u2d30-\u2d65\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u2e2f\u3005\u303b\u303c\u3105-\u312d\u3131-\u318e\u31a0-\u31ba\ua000-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua697\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua78e\ua790\ua791\ua7a0-\ua7a9\ua7fa-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uabc0-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uffa0-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc]',
+      midnumlet: '[-\'\\.\u2018\u2019\u2024\uFE52\uFF07\uFF0E]',
+      midletter: '[:\xB7\xB7\u05F4\u2027\uFE13\uFE55\uFF1A]',
+      midnum: '[\xB1+*/,;;\u0589\u060C\u060D\u066C\u07F8\u2044\uFE10\uFE14\uFE50\uFE54\uFF0C\uFF1B]',
+      numeric: '[0-9\u0660-\u0669\u066B\u06f0-\u06f9\u07c0-\u07c9\u0966-\u096f\u09e6-\u09ef\u0a66-\u0a6f\u0ae6-\u0aef\u0b66-\u0b6f\u0be6-\u0bef\u0c66-\u0c6f\u0ce6-\u0cef\u0d66-\u0d6f\u0e50-\u0e59\u0ed0-\u0ed9\u0f20-\u0f29\u1040-\u1049\u1090-\u1099\u17e0-\u17e9\u1810-\u1819\u1946-\u194f\u19d0-\u19d9\u1a80-\u1a89\u1a90-\u1a99\u1b50-\u1b59\u1bb0-\u1bb9\u1c40-\u1c49\u1c50-\u1c59\ua620-\ua629\ua8d0-\ua8d9\ua900-\ua909\ua9d0-\ua9d9\uaa50-\uaa59\uabf0-\uabf9]',
+      cr: '\\r',
+      lf: '\\n',
+      newline: '[\x0B\f\x85\u2028\u2029]',
+      extend: '[\u0300-\u036f\u0483-\u0489\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u064b-\u065f\u0670\u06d6-\u06dc\u06df-\u06e4\u06e7\u06e8\u06ea-\u06ed\u0711\u0730-\u074a\u07a6-\u07b0\u07eb-\u07f3\u0816-\u0819\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0859-\u085b\u0900-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962\u0963\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09cb-\u09cd\u09d7\u09e2\u09e3\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a70\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2\u0ae3\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b62\u0b63\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0c01-\u0c03\u0c3e-\u0c44\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62\u0c63\u0c82\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2\u0ce3\u0d02\u0d03\u0d3e-\u0d44\u0d46-\u0d48\u0d4a-\u0d4d\u0d57\u0d62\u0d63\u0d82\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0df2\u0df3\u0e31\u0e34-\u0e3a\u0e47-\u0e4e\u0eb1\u0eb4-\u0eb9\u0ebb\u0ebc\u0ec8-\u0ecd\u0f18\u0f19\u0f35\u0f37\u0f39\u0f3e\u0f3f\u0f71-\u0f84\u0f86\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u102b-\u103e\u1056-\u1059\u105e-\u1060\u1062-\u1064\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f\u109a-\u109d\u135d-\u135f\u1712-\u1714\u1732-\u1734\u1752\u1753\u1772\u1773\u17b6-\u17d3\u17dd\u180b-\u180d\u18a9\u1920-\u192b\u1930-\u193b\u19b0-\u19c0\u19c8\u19c9\u1a17-\u1a1b\u1a55-\u1a5e\u1a60-\u1a7c\u1a7f\u1b00-\u1b04\u1b34-\u1b44\u1b6b-\u1b73\u1b80-\u1b82\u1ba1-\u1baa\u1be6-\u1bf3\u1c24-\u1c37\u1cd0-\u1cd2\u1cd4-\u1ce8\u1ced\u1cf2\u1dc0-\u1de6\u1dfc-\u1dff\u200c\u200d\u20d0-\u20f0\u2cef-\u2cf1\u2d7f\u2de0-\u2dff\u302a-\u302f\u3099\u309a\ua66f-\uA672\ua67c\ua67d\ua6f0\ua6f1\ua802\ua806\ua80b\ua823-\ua827\ua880\ua881\ua8b4-\ua8c4\ua8e0-\ua8f1\ua926-\ua92d\ua947-\ua953\ua980-\ua983\ua9b3-\ua9c0\uaa29-\uaa36\uaa43\uaa4c\uaa4d\uaa7b\uaab0\uaab2-\uaab4\uaab7\uaab8\uaabe\uaabf\uaac1\uabe3-\uabea\uabec\uabed\ufb1e\ufe00-\ufe0f\ufe20-\ufe26\uff9e\uff9f]',
+      format: '[\xAD\u0600-\u0603\u06DD\u070F\u17b4\u17b5\u200E\u200F\u202A-\u202E\u2060-\u2064\u206A-\u206F\uFEFF\uFFF9-\uFFFB]',
+      katakana: '[\u3031-\u3035\u309B\u309C\u30A0-\u30fa\u30fc-\u30ff\u31f0-\u31ff\u32D0-\u32FE\u3300-\u3357\uff66-\uff9d]',
+      extendnumlet: '[=_\u203f\u2040\u2054\ufe33\ufe34\ufe4d-\ufe4f\uff3f\u2200-\u22FF<>]',
+      punctuation: punctuationStr
+    };
+    var characterIndices = {
+      ALETTER: 0,
+      MIDNUMLET: 1,
+      MIDLETTER: 2,
+      MIDNUM: 3,
+      NUMERIC: 4,
+      CR: 5,
+      LF: 6,
+      NEWLINE: 7,
+      EXTEND: 8,
+      FORMAT: 9,
+      KATAKANA: 10,
+      EXTENDNUMLET: 11,
+      AT: 12,
+      OTHER: 13
+    };
+    var SETS = [
+      new RegExp(regExps.aletter),
+      new RegExp(regExps.midnumlet),
+      new RegExp(regExps.midletter),
+      new RegExp(regExps.midnum),
+      new RegExp(regExps.numeric),
+      new RegExp(regExps.cr),
+      new RegExp(regExps.lf),
+      new RegExp(regExps.newline),
+      new RegExp(regExps.extend),
+      new RegExp(regExps.format),
+      new RegExp(regExps.katakana),
+      new RegExp(regExps.extendnumlet),
+      new RegExp('@')
+    ];
+    var EMPTY_STRING = '';
+    var PUNCTUATION = new RegExp('^' + regExps.punctuation + '$');
+    var WHITESPACE = /^\s+$/;
+
+    var SETS$1 = SETS;
+    var OTHER = characterIndices.OTHER;
+    var getType = function (char) {
+      var type = OTHER;
+      var setsLength = SETS$1.length;
+      for (var j = 0; j < setsLength; ++j) {
+        var set = SETS$1[j];
+        if (set && set.test(char)) {
+          type = j;
+          break;
+        }
+      }
+      return type;
+    };
+    var memoize = function (func) {
+      var cache = {};
+      return function (char) {
+        if (cache[char]) {
+          return cache[char];
+        } else {
+          var result = func(char);
+          cache[char] = result;
+          return result;
+        }
+      };
+    };
+    var classify = function (characters) {
+      var memoized = memoize(getType);
+      return map(characters, memoized);
+    };
+
+    var isWordBoundary = function (map, index) {
+      var type = map[index];
+      var nextType = map[index + 1];
+      if (index < 0 || index > map.length - 1 && index !== 0) {
+        return false;
+      }
+      if (type === characterIndices.ALETTER && nextType === characterIndices.ALETTER) {
+        return false;
+      }
+      var nextNextType = map[index + 2];
+      if (type === characterIndices.ALETTER && (nextType === characterIndices.MIDLETTER || nextType === characterIndices.MIDNUMLET || nextType === characterIndices.AT) && nextNextType === characterIndices.ALETTER) {
+        return false;
+      }
+      var prevType = map[index - 1];
+      if ((type === characterIndices.MIDLETTER || type === characterIndices.MIDNUMLET || nextType === characterIndices.AT) && nextType === characterIndices.ALETTER && prevType === characterIndices.ALETTER) {
+        return false;
+      }
+      if ((type === characterIndices.NUMERIC || type === characterIndices.ALETTER) && (nextType === characterIndices.NUMERIC || nextType === characterIndices.ALETTER)) {
+        return false;
+      }
+      if ((type === characterIndices.MIDNUM || type === characterIndices.MIDNUMLET) && nextType === characterIndices.NUMERIC && prevType === characterIndices.NUMERIC) {
+        return false;
+      }
+      if (type === characterIndices.NUMERIC && (nextType === characterIndices.MIDNUM || nextType === characterIndices.MIDNUMLET) && nextNextType === characterIndices.NUMERIC) {
+        return false;
+      }
+      if (type === characterIndices.EXTEND || type === characterIndices.FORMAT || prevType === characterIndices.EXTEND || prevType === characterIndices.FORMAT || nextType === characterIndices.EXTEND || nextType === characterIndices.FORMAT) {
+        return false;
+      }
+      if (type === characterIndices.CR && nextType === characterIndices.LF) {
+        return false;
+      }
+      if (type === characterIndices.NEWLINE || type === characterIndices.CR || type === characterIndices.LF) {
+        return true;
+      }
+      if (nextType === characterIndices.NEWLINE || nextType === characterIndices.CR || nextType === characterIndices.LF) {
+        return true;
+      }
+      if (type === characterIndices.KATAKANA && nextType === characterIndices.KATAKANA) {
+        return false;
+      }
+      if (nextType === characterIndices.EXTENDNUMLET && (type === characterIndices.ALETTER || type === characterIndices.NUMERIC || type === characterIndices.KATAKANA || type === characterIndices.EXTENDNUMLET)) {
+        return false;
+      }
+      if (type === characterIndices.EXTENDNUMLET && (nextType === characterIndices.ALETTER || nextType === characterIndices.NUMERIC || nextType === characterIndices.KATAKANA)) {
+        return false;
+      }
+      if (type === characterIndices.AT) {
+        return false;
+      }
+      return true;
+    };
+
+    var EMPTY_STRING$1 = EMPTY_STRING;
+    var WHITESPACE$1 = WHITESPACE;
+    var PUNCTUATION$1 = PUNCTUATION;
+    var isProtocol = function (str) {
+      return str === 'http' || str === 'https';
+    };
+    var findWordEnd = function (characters, startIndex) {
+      var i;
+      for (i = startIndex; i < characters.length; i++) {
+        if (WHITESPACE$1.test(characters[i])) {
+          break;
+        }
+      }
+      return i;
+    };
+    var findUrlEnd = function (characters, startIndex) {
+      var endIndex = findWordEnd(characters, startIndex + 1);
+      var peakedWord = characters.slice(startIndex + 1, endIndex).join(EMPTY_STRING$1);
+      return peakedWord.substr(0, 3) === '://' ? endIndex : startIndex;
+    };
+    var findWords = function (chars, sChars, characterMap, options) {
+      var words = [];
+      var word = [];
+      for (var i = 0; i < characterMap.length; ++i) {
+        word.push(chars[i]);
+        if (isWordBoundary(characterMap, i)) {
+          var ch = sChars[i];
+          if ((options.includeWhitespace || !WHITESPACE$1.test(ch)) && (options.includePunctuation || !PUNCTUATION$1.test(ch))) {
+            var startOfWord = i - word.length + 1;
+            var endOfWord = i + 1;
+            var str = sChars.slice(startOfWord, endOfWord).join(EMPTY_STRING$1);
+            if (isProtocol(str)) {
+              var endOfUrl = findUrlEnd(sChars, i);
+              var url = chars.slice(endOfWord, endOfUrl);
+              Array.prototype.push.apply(word, url);
+              i = endOfUrl;
+            }
+            words.push(word);
+          }
+          word = [];
+        }
+      }
+      return words;
+    };
+    var getDefaultOptions = function () {
+      return {
+        includeWhitespace: false,
+        includePunctuation: false
+      };
+    };
+    var getWords = function (chars, extract, options) {
+      options = __assign(__assign({}, getDefaultOptions()), options);
+      var filteredChars = [];
+      var extractedChars = [];
+      for (var i = 0; i < chars.length; i++) {
+        var ch = extract(chars[i]);
+        if (ch !== zeroWidth) {
+          filteredChars.push(chars[i]);
+          extractedChars.push(ch);
+        }
+      }
+      var characterMap = classify(extractedChars);
+      return findWords(filteredChars, extractedChars, characterMap, options);
+    };
+
+    var getWords$1 = getWords;
+
+    var global$1 = tinymce.util.Tools.resolve('tinymce.dom.TreeWalker');
+
+    var getText = function (node, schema) {
+      var blockElements = schema.getBlockElements();
+      var shortEndedElements = schema.getShortEndedElements();
+      var isNewline = function (node) {
+        return blockElements[node.nodeName] || shortEndedElements[node.nodeName];
+      };
+      var textBlocks = [];
+      var txt = '';
+      var treeWalker = new global$1(node, node);
+      while (node = treeWalker.next()) {
+        if (node.nodeType === 3) {
+          txt += removeZwsp(node.data);
+        } else if (isNewline(node) && txt.length) {
+          textBlocks.push(txt);
+          txt = '';
+        }
+      }
+      if (txt.length) {
+        textBlocks.push(txt);
+      }
+      return textBlocks;
+    };
+
+    var strLen = function (str) {
+      return str.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '_').length;
+    };
+    var countWords = function (node, schema) {
+      var text = getText(node, schema).join('\n');
+      return getWords$1(text.split(''), identity).length;
+    };
+    var countCharacters = function (node, schema) {
+      var text = getText(node, schema).join('');
+      return strLen(text);
+    };
+    var countCharactersWithoutSpaces = function (node, schema) {
+      var text = getText(node, schema).join('').replace(/\s/g, '');
+      return strLen(text);
+    };
+
+    var createBodyCounter = function (editor, count) {
+      return function () {
+        return count(editor.getBody(), editor.schema);
+      };
+    };
+    var createSelectionCounter = function (editor, count) {
+      return function () {
+        return count(editor.selection.getRng().cloneContents(), editor.schema);
+      };
+    };
+    var createBodyWordCounter = function (editor) {
+      return createBodyCounter(editor, countWords);
+    };
+    var get = function (editor) {
+      return {
+        body: {
+          getWordCount: createBodyWordCounter(editor),
+          getCharacterCount: createBodyCounter(editor, countCharacters),
+          getCharacterCountWithoutSpaces: createBodyCounter(editor, countCharactersWithoutSpaces)
+        },
+        selection: {
+          getWordCount: createSelectionCounter(editor, countWords),
+          getCharacterCount: createSelectionCounter(editor, countCharacters),
+          getCharacterCountWithoutSpaces: createSelectionCounter(editor, countCharactersWithoutSpaces)
+        },
+        getCount: createBodyWordCounter(editor)
+      };
+    };
+
+    var global$2 = tinymce.util.Tools.resolve('tinymce.util.Delay');
+
+    var fireWordCountUpdate = function (editor, api) {
+      editor.fire('wordCountUpdate', {
+        wordCount: {
+          words: api.body.getWordCount(),
+          characters: api.body.getCharacterCount(),
+          charactersWithoutSpaces: api.body.getCharacterCountWithoutSpaces()
+        }
+      });
+    };
+
+    var updateCount = function (editor, api) {
+      fireWordCountUpdate(editor, api);
+    };
+    var setup = function (editor, api, delay) {
+      var debouncedUpdate = global$2.debounce(function () {
+        return updateCount(editor, api);
+      }, delay);
+      editor.on('init', function () {
+        updateCount(editor, api);
+        global$2.setEditorTimeout(editor, function () {
+          editor.on('SetContent BeforeAddUndo Undo Redo keyup', debouncedUpdate);
+        }, 0);
+      });
+    };
+
+    var open = function (editor, api) {
+      editor.windowManager.open({
+        title: 'Word Count',
+        body: {
+          type: 'panel',
+          items: [{
+              type: 'table',
+              header: [
+                'Count',
+                'Document',
+                'Selection'
+              ],
+              cells: [
+                [
+                  'Words',
+                  String(api.body.getWordCount()),
+                  String(api.selection.getWordCount())
+                ],
+                [
+                  'Characters (no spaces)',
+                  String(api.body.getCharacterCountWithoutSpaces()),
+                  String(api.selection.getCharacterCountWithoutSpaces())
+                ],
+                [
+                  'Characters',
+                  String(api.body.getCharacterCount()),
+                  String(api.selection.getCharacterCount())
+                ]
+              ]
+            }]
+        },
+        buttons: [{
+            type: 'cancel',
+            name: 'close',
+            text: 'Close',
+            primary: true
+          }]
+      });
+    };
+
+    var register = function (editor, api) {
+      editor.ui.registry.addButton('wordcount', {
+        tooltip: 'Word count',
+        icon: 'character-count',
+        onAction: function () {
+          return open(editor, api);
+        }
+      });
+      editor.ui.registry.addMenuItem('wordcount', {
+        text: 'Word count',
+        icon: 'character-count',
+        onAction: function () {
+          return open(editor, api);
+        }
+      });
+    };
+
+    function Plugin (delay) {
+      if (delay === void 0) {
+        delay = 300;
+      }
+      global.add('wordcount', function (editor) {
+        var api = get(editor);
+        register(editor, api);
+        setup(editor, api, delay);
+        return api;
       });
     }
 
@@ -82401,423 +82818,6 @@ tinymce.IconManager.add('default', {
         setup$1(editor, toggleState);
         setup(editor, toggleState);
         return get(toggleState);
-      });
-    }
-
-    Plugin();
-
-}());
-
-/**
- * Copyright (c) Tiny Technologies, Inc. All rights reserved.
- * Licensed under the LGPL or a commercial license.
- * For LGPL see License.txt in the project root for license information.
- * For commercial licenses see https://www.tiny.cloud/
- *
- * Version: 5.8.2 (2021-06-23)
- */
-(function () {
-    'use strict';
-
-    var global = tinymce.util.Tools.resolve('tinymce.PluginManager');
-
-    var identity = function (x) {
-      return x;
-    };
-
-    var __assign = function () {
-      __assign = Object.assign || function __assign(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-          s = arguments[i];
-          for (var p in s)
-            if (Object.prototype.hasOwnProperty.call(s, p))
-              t[p] = s[p];
-        }
-        return t;
-      };
-      return __assign.apply(this, arguments);
-    };
-
-    var zeroWidth = '\uFEFF';
-    var removeZwsp = function (s) {
-      return s.replace(/\uFEFF/g, '');
-    };
-
-    var map = function (xs, f) {
-      var len = xs.length;
-      var r = new Array(len);
-      for (var i = 0; i < len; i++) {
-        var x = xs[i];
-        r[i] = f(x, i);
-      }
-      return r;
-    };
-
-    var punctuationStr = '[!-#%-*,-\\/:;?@\\[-\\]_{}\xA1\xAB\xB7\xBB\xBF;\xB7\u055A-\u055F\u0589\u058A\u05BE\u05C0\u05C3\u05C6\u05F3\u05F4\u0609\u060A\u060C\u060D\u061B\u061E\u061F\u066A-\u066D\u06D4\u0700-\u070D\u07F7-\u07F9\u0830-\u083E\u085E\u0964\u0965\u0970\u0DF4\u0E4F\u0E5A\u0E5B\u0F04-\u0F12\u0F3A-\u0F3D\u0F85\u0FD0-\u0FD4\u0FD9\u0FDA\u104A-\u104F\u10FB\u1361-\u1368\u1400\u166D\u166E\u169B\u169C\u16EB-\u16ED\u1735\u1736\u17D4-\u17D6\u17D8-\u17DA\u1800-\u180A\u1944\u1945\u1A1E\u1A1F\u1AA0-\u1AA6\u1AA8-\u1AAD\u1B5A-\u1B60\u1BFC-\u1BFF\u1C3B-\u1C3F\u1C7E\u1C7F\u1CD3\u2010-\u2027\u2030-\u2043\u2045-\u2051\u2053-\u205E\u207D\u207E\u208D\u208E\u3008\u3009\u2768-\u2775\u27C5\u27C6\u27E6-\u27EF\u2983-\u2998\u29D8-\u29DB\u29FC\u29FD\u2CF9-\u2CFC\u2CFE\u2CFF\u2D70\u2E00-\u2E2E\u2E30\u2E31\u3001-\u3003\u3008-\u3011\u3014-\u301F\u3030\u303D\u30A0\u30FB\uA4FE\uA4FF\uA60D-\uA60F\uA673\uA67E\uA6F2-\uA6F7\uA874-\uA877\uA8CE\uA8CF\uA8F8-\uA8FA\uA92E\uA92F\uA95F\uA9C1-\uA9CD\uA9DE\uA9DF\uAA5C-\uAA5F\uAADE\uAADF\uABEB\uFD3E\uFD3F\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE61\uFE63\uFE68\uFE6A\uFE6B\uFF01-\uFF03\uFF05-\uFF0A\uFF0C-\uFF0F\uFF1A\uFF1B\uFF1F\uFF20\uFF3B-\uFF3D\uff3f\uFF5B\uFF5D\uFF5F-\uFF65]';
-    var regExps = {
-      aletter: '[A-Za-z\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u0527\u0531-\u0556\u0559\u0561-\u0587\u05d0-\u05ea\u05f0-\u05F3\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0977\u0979-\u097f\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c33\u0c35-\u0c39\u0c3d\u0c58\u0c59\u0c60\u0c61\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d60\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u10a0-\u10c5\u10d0-\u10fa\u10fc\u1100-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f4\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f0\u1700-\u170c\u170e-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1820-\u1877\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191c\u1a00-\u1a16\u1b05-\u1b33\u1b45-\u1b4b\u1b83-\u1ba0\u1bae\u1baf\u1bc0-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1ce9-\u1cec\u1cee-\u1cf1\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2119-\u211d\u2124\u2126\u2128\u212a-\u212d\u212f-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u24B6-\u24E9\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb-\u2cee\u2d00-\u2d25\u2d30-\u2d65\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u2e2f\u3005\u303b\u303c\u3105-\u312d\u3131-\u318e\u31a0-\u31ba\ua000-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua697\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua78e\ua790\ua791\ua7a0-\ua7a9\ua7fa-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uabc0-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uffa0-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc]',
-      midnumlet: '[-\'\\.\u2018\u2019\u2024\uFE52\uFF07\uFF0E]',
-      midletter: '[:\xB7\xB7\u05F4\u2027\uFE13\uFE55\uFF1A]',
-      midnum: '[\xB1+*/,;;\u0589\u060C\u060D\u066C\u07F8\u2044\uFE10\uFE14\uFE50\uFE54\uFF0C\uFF1B]',
-      numeric: '[0-9\u0660-\u0669\u066B\u06f0-\u06f9\u07c0-\u07c9\u0966-\u096f\u09e6-\u09ef\u0a66-\u0a6f\u0ae6-\u0aef\u0b66-\u0b6f\u0be6-\u0bef\u0c66-\u0c6f\u0ce6-\u0cef\u0d66-\u0d6f\u0e50-\u0e59\u0ed0-\u0ed9\u0f20-\u0f29\u1040-\u1049\u1090-\u1099\u17e0-\u17e9\u1810-\u1819\u1946-\u194f\u19d0-\u19d9\u1a80-\u1a89\u1a90-\u1a99\u1b50-\u1b59\u1bb0-\u1bb9\u1c40-\u1c49\u1c50-\u1c59\ua620-\ua629\ua8d0-\ua8d9\ua900-\ua909\ua9d0-\ua9d9\uaa50-\uaa59\uabf0-\uabf9]',
-      cr: '\\r',
-      lf: '\\n',
-      newline: '[\x0B\f\x85\u2028\u2029]',
-      extend: '[\u0300-\u036f\u0483-\u0489\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u064b-\u065f\u0670\u06d6-\u06dc\u06df-\u06e4\u06e7\u06e8\u06ea-\u06ed\u0711\u0730-\u074a\u07a6-\u07b0\u07eb-\u07f3\u0816-\u0819\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0859-\u085b\u0900-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962\u0963\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09cb-\u09cd\u09d7\u09e2\u09e3\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a70\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2\u0ae3\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b62\u0b63\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0c01-\u0c03\u0c3e-\u0c44\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62\u0c63\u0c82\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2\u0ce3\u0d02\u0d03\u0d3e-\u0d44\u0d46-\u0d48\u0d4a-\u0d4d\u0d57\u0d62\u0d63\u0d82\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0df2\u0df3\u0e31\u0e34-\u0e3a\u0e47-\u0e4e\u0eb1\u0eb4-\u0eb9\u0ebb\u0ebc\u0ec8-\u0ecd\u0f18\u0f19\u0f35\u0f37\u0f39\u0f3e\u0f3f\u0f71-\u0f84\u0f86\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u102b-\u103e\u1056-\u1059\u105e-\u1060\u1062-\u1064\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f\u109a-\u109d\u135d-\u135f\u1712-\u1714\u1732-\u1734\u1752\u1753\u1772\u1773\u17b6-\u17d3\u17dd\u180b-\u180d\u18a9\u1920-\u192b\u1930-\u193b\u19b0-\u19c0\u19c8\u19c9\u1a17-\u1a1b\u1a55-\u1a5e\u1a60-\u1a7c\u1a7f\u1b00-\u1b04\u1b34-\u1b44\u1b6b-\u1b73\u1b80-\u1b82\u1ba1-\u1baa\u1be6-\u1bf3\u1c24-\u1c37\u1cd0-\u1cd2\u1cd4-\u1ce8\u1ced\u1cf2\u1dc0-\u1de6\u1dfc-\u1dff\u200c\u200d\u20d0-\u20f0\u2cef-\u2cf1\u2d7f\u2de0-\u2dff\u302a-\u302f\u3099\u309a\ua66f-\uA672\ua67c\ua67d\ua6f0\ua6f1\ua802\ua806\ua80b\ua823-\ua827\ua880\ua881\ua8b4-\ua8c4\ua8e0-\ua8f1\ua926-\ua92d\ua947-\ua953\ua980-\ua983\ua9b3-\ua9c0\uaa29-\uaa36\uaa43\uaa4c\uaa4d\uaa7b\uaab0\uaab2-\uaab4\uaab7\uaab8\uaabe\uaabf\uaac1\uabe3-\uabea\uabec\uabed\ufb1e\ufe00-\ufe0f\ufe20-\ufe26\uff9e\uff9f]',
-      format: '[\xAD\u0600-\u0603\u06DD\u070F\u17b4\u17b5\u200E\u200F\u202A-\u202E\u2060-\u2064\u206A-\u206F\uFEFF\uFFF9-\uFFFB]',
-      katakana: '[\u3031-\u3035\u309B\u309C\u30A0-\u30fa\u30fc-\u30ff\u31f0-\u31ff\u32D0-\u32FE\u3300-\u3357\uff66-\uff9d]',
-      extendnumlet: '[=_\u203f\u2040\u2054\ufe33\ufe34\ufe4d-\ufe4f\uff3f\u2200-\u22FF<>]',
-      punctuation: punctuationStr
-    };
-    var characterIndices = {
-      ALETTER: 0,
-      MIDNUMLET: 1,
-      MIDLETTER: 2,
-      MIDNUM: 3,
-      NUMERIC: 4,
-      CR: 5,
-      LF: 6,
-      NEWLINE: 7,
-      EXTEND: 8,
-      FORMAT: 9,
-      KATAKANA: 10,
-      EXTENDNUMLET: 11,
-      AT: 12,
-      OTHER: 13
-    };
-    var SETS = [
-      new RegExp(regExps.aletter),
-      new RegExp(regExps.midnumlet),
-      new RegExp(regExps.midletter),
-      new RegExp(regExps.midnum),
-      new RegExp(regExps.numeric),
-      new RegExp(regExps.cr),
-      new RegExp(regExps.lf),
-      new RegExp(regExps.newline),
-      new RegExp(regExps.extend),
-      new RegExp(regExps.format),
-      new RegExp(regExps.katakana),
-      new RegExp(regExps.extendnumlet),
-      new RegExp('@')
-    ];
-    var EMPTY_STRING = '';
-    var PUNCTUATION = new RegExp('^' + regExps.punctuation + '$');
-    var WHITESPACE = /^\s+$/;
-
-    var SETS$1 = SETS;
-    var OTHER = characterIndices.OTHER;
-    var getType = function (char) {
-      var type = OTHER;
-      var setsLength = SETS$1.length;
-      for (var j = 0; j < setsLength; ++j) {
-        var set = SETS$1[j];
-        if (set && set.test(char)) {
-          type = j;
-          break;
-        }
-      }
-      return type;
-    };
-    var memoize = function (func) {
-      var cache = {};
-      return function (char) {
-        if (cache[char]) {
-          return cache[char];
-        } else {
-          var result = func(char);
-          cache[char] = result;
-          return result;
-        }
-      };
-    };
-    var classify = function (characters) {
-      var memoized = memoize(getType);
-      return map(characters, memoized);
-    };
-
-    var isWordBoundary = function (map, index) {
-      var type = map[index];
-      var nextType = map[index + 1];
-      if (index < 0 || index > map.length - 1 && index !== 0) {
-        return false;
-      }
-      if (type === characterIndices.ALETTER && nextType === characterIndices.ALETTER) {
-        return false;
-      }
-      var nextNextType = map[index + 2];
-      if (type === characterIndices.ALETTER && (nextType === characterIndices.MIDLETTER || nextType === characterIndices.MIDNUMLET || nextType === characterIndices.AT) && nextNextType === characterIndices.ALETTER) {
-        return false;
-      }
-      var prevType = map[index - 1];
-      if ((type === characterIndices.MIDLETTER || type === characterIndices.MIDNUMLET || nextType === characterIndices.AT) && nextType === characterIndices.ALETTER && prevType === characterIndices.ALETTER) {
-        return false;
-      }
-      if ((type === characterIndices.NUMERIC || type === characterIndices.ALETTER) && (nextType === characterIndices.NUMERIC || nextType === characterIndices.ALETTER)) {
-        return false;
-      }
-      if ((type === characterIndices.MIDNUM || type === characterIndices.MIDNUMLET) && nextType === characterIndices.NUMERIC && prevType === characterIndices.NUMERIC) {
-        return false;
-      }
-      if (type === characterIndices.NUMERIC && (nextType === characterIndices.MIDNUM || nextType === characterIndices.MIDNUMLET) && nextNextType === characterIndices.NUMERIC) {
-        return false;
-      }
-      if (type === characterIndices.EXTEND || type === characterIndices.FORMAT || prevType === characterIndices.EXTEND || prevType === characterIndices.FORMAT || nextType === characterIndices.EXTEND || nextType === characterIndices.FORMAT) {
-        return false;
-      }
-      if (type === characterIndices.CR && nextType === characterIndices.LF) {
-        return false;
-      }
-      if (type === characterIndices.NEWLINE || type === characterIndices.CR || type === characterIndices.LF) {
-        return true;
-      }
-      if (nextType === characterIndices.NEWLINE || nextType === characterIndices.CR || nextType === characterIndices.LF) {
-        return true;
-      }
-      if (type === characterIndices.KATAKANA && nextType === characterIndices.KATAKANA) {
-        return false;
-      }
-      if (nextType === characterIndices.EXTENDNUMLET && (type === characterIndices.ALETTER || type === characterIndices.NUMERIC || type === characterIndices.KATAKANA || type === characterIndices.EXTENDNUMLET)) {
-        return false;
-      }
-      if (type === characterIndices.EXTENDNUMLET && (nextType === characterIndices.ALETTER || nextType === characterIndices.NUMERIC || nextType === characterIndices.KATAKANA)) {
-        return false;
-      }
-      if (type === characterIndices.AT) {
-        return false;
-      }
-      return true;
-    };
-
-    var EMPTY_STRING$1 = EMPTY_STRING;
-    var WHITESPACE$1 = WHITESPACE;
-    var PUNCTUATION$1 = PUNCTUATION;
-    var isProtocol = function (str) {
-      return str === 'http' || str === 'https';
-    };
-    var findWordEnd = function (characters, startIndex) {
-      var i;
-      for (i = startIndex; i < characters.length; i++) {
-        if (WHITESPACE$1.test(characters[i])) {
-          break;
-        }
-      }
-      return i;
-    };
-    var findUrlEnd = function (characters, startIndex) {
-      var endIndex = findWordEnd(characters, startIndex + 1);
-      var peakedWord = characters.slice(startIndex + 1, endIndex).join(EMPTY_STRING$1);
-      return peakedWord.substr(0, 3) === '://' ? endIndex : startIndex;
-    };
-    var findWords = function (chars, sChars, characterMap, options) {
-      var words = [];
-      var word = [];
-      for (var i = 0; i < characterMap.length; ++i) {
-        word.push(chars[i]);
-        if (isWordBoundary(characterMap, i)) {
-          var ch = sChars[i];
-          if ((options.includeWhitespace || !WHITESPACE$1.test(ch)) && (options.includePunctuation || !PUNCTUATION$1.test(ch))) {
-            var startOfWord = i - word.length + 1;
-            var endOfWord = i + 1;
-            var str = sChars.slice(startOfWord, endOfWord).join(EMPTY_STRING$1);
-            if (isProtocol(str)) {
-              var endOfUrl = findUrlEnd(sChars, i);
-              var url = chars.slice(endOfWord, endOfUrl);
-              Array.prototype.push.apply(word, url);
-              i = endOfUrl;
-            }
-            words.push(word);
-          }
-          word = [];
-        }
-      }
-      return words;
-    };
-    var getDefaultOptions = function () {
-      return {
-        includeWhitespace: false,
-        includePunctuation: false
-      };
-    };
-    var getWords = function (chars, extract, options) {
-      options = __assign(__assign({}, getDefaultOptions()), options);
-      var filteredChars = [];
-      var extractedChars = [];
-      for (var i = 0; i < chars.length; i++) {
-        var ch = extract(chars[i]);
-        if (ch !== zeroWidth) {
-          filteredChars.push(chars[i]);
-          extractedChars.push(ch);
-        }
-      }
-      var characterMap = classify(extractedChars);
-      return findWords(filteredChars, extractedChars, characterMap, options);
-    };
-
-    var getWords$1 = getWords;
-
-    var global$1 = tinymce.util.Tools.resolve('tinymce.dom.TreeWalker');
-
-    var getText = function (node, schema) {
-      var blockElements = schema.getBlockElements();
-      var shortEndedElements = schema.getShortEndedElements();
-      var isNewline = function (node) {
-        return blockElements[node.nodeName] || shortEndedElements[node.nodeName];
-      };
-      var textBlocks = [];
-      var txt = '';
-      var treeWalker = new global$1(node, node);
-      while (node = treeWalker.next()) {
-        if (node.nodeType === 3) {
-          txt += removeZwsp(node.data);
-        } else if (isNewline(node) && txt.length) {
-          textBlocks.push(txt);
-          txt = '';
-        }
-      }
-      if (txt.length) {
-        textBlocks.push(txt);
-      }
-      return textBlocks;
-    };
-
-    var strLen = function (str) {
-      return str.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '_').length;
-    };
-    var countWords = function (node, schema) {
-      var text = getText(node, schema).join('\n');
-      return getWords$1(text.split(''), identity).length;
-    };
-    var countCharacters = function (node, schema) {
-      var text = getText(node, schema).join('');
-      return strLen(text);
-    };
-    var countCharactersWithoutSpaces = function (node, schema) {
-      var text = getText(node, schema).join('').replace(/\s/g, '');
-      return strLen(text);
-    };
-
-    var createBodyCounter = function (editor, count) {
-      return function () {
-        return count(editor.getBody(), editor.schema);
-      };
-    };
-    var createSelectionCounter = function (editor, count) {
-      return function () {
-        return count(editor.selection.getRng().cloneContents(), editor.schema);
-      };
-    };
-    var createBodyWordCounter = function (editor) {
-      return createBodyCounter(editor, countWords);
-    };
-    var get = function (editor) {
-      return {
-        body: {
-          getWordCount: createBodyWordCounter(editor),
-          getCharacterCount: createBodyCounter(editor, countCharacters),
-          getCharacterCountWithoutSpaces: createBodyCounter(editor, countCharactersWithoutSpaces)
-        },
-        selection: {
-          getWordCount: createSelectionCounter(editor, countWords),
-          getCharacterCount: createSelectionCounter(editor, countCharacters),
-          getCharacterCountWithoutSpaces: createSelectionCounter(editor, countCharactersWithoutSpaces)
-        },
-        getCount: createBodyWordCounter(editor)
-      };
-    };
-
-    var global$2 = tinymce.util.Tools.resolve('tinymce.util.Delay');
-
-    var fireWordCountUpdate = function (editor, api) {
-      editor.fire('wordCountUpdate', {
-        wordCount: {
-          words: api.body.getWordCount(),
-          characters: api.body.getCharacterCount(),
-          charactersWithoutSpaces: api.body.getCharacterCountWithoutSpaces()
-        }
-      });
-    };
-
-    var updateCount = function (editor, api) {
-      fireWordCountUpdate(editor, api);
-    };
-    var setup = function (editor, api, delay) {
-      var debouncedUpdate = global$2.debounce(function () {
-        return updateCount(editor, api);
-      }, delay);
-      editor.on('init', function () {
-        updateCount(editor, api);
-        global$2.setEditorTimeout(editor, function () {
-          editor.on('SetContent BeforeAddUndo Undo Redo keyup', debouncedUpdate);
-        }, 0);
-      });
-    };
-
-    var open = function (editor, api) {
-      editor.windowManager.open({
-        title: 'Word Count',
-        body: {
-          type: 'panel',
-          items: [{
-              type: 'table',
-              header: [
-                'Count',
-                'Document',
-                'Selection'
-              ],
-              cells: [
-                [
-                  'Words',
-                  String(api.body.getWordCount()),
-                  String(api.selection.getWordCount())
-                ],
-                [
-                  'Characters (no spaces)',
-                  String(api.body.getCharacterCountWithoutSpaces()),
-                  String(api.selection.getCharacterCountWithoutSpaces())
-                ],
-                [
-                  'Characters',
-                  String(api.body.getCharacterCount()),
-                  String(api.selection.getCharacterCount())
-                ]
-              ]
-            }]
-        },
-        buttons: [{
-            type: 'cancel',
-            name: 'close',
-            text: 'Close',
-            primary: true
-          }]
-      });
-    };
-
-    var register = function (editor, api) {
-      editor.ui.registry.addButton('wordcount', {
-        tooltip: 'Word count',
-        icon: 'character-count',
-        onAction: function () {
-          return open(editor, api);
-        }
-      });
-      editor.ui.registry.addMenuItem('wordcount', {
-        text: 'Word count',
-        icon: 'character-count',
-        onAction: function () {
-          return open(editor, api);
-        }
-      });
-    };
-
-    function Plugin (delay) {
-      if (delay === void 0) {
-        delay = 300;
-      }
-      global.add('wordcount', function (editor) {
-        var api = get(editor);
-        register(editor, api);
-        setup(editor, api, delay);
-        return api;
       });
     }
 

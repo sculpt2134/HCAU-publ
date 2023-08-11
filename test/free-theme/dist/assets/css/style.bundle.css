@@ -46765,6 +46765,53 @@ div:hover::-webkit-scrollbar-thumb {
   background: #50CD89;
 }
 
+/* font */
+@font-face {
+  font-family: "HyundaiRegular";
+  src: url("../font/HyundaiSansHead-Regular.woff2") format("woff2"), url("../font/HyundaiSansHead-Regular.woff") format("woff"), url("../font/HyundaiSansHead-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: "HyundaiMedium";
+  src: url("../font/HyundaiSansHead-Medium.woff2") format("woff2"), url("../font/HyundaiSansHead-Medium.woff") format("woff"), url("../font/HyundaiSansHead-Medium.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: "HyundaiTextRegular";
+  src: url("../font/HyundaiSansText-Regular.woff2") format("woff2"), url("../font/HyundaiSansText-Regular.woff") format("woff"), url("../font/HyundaiSansText-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: "HyundaiLight";
+  src: url("../font/HyundaiSansHead-Light.woff2") format("woff2"), url("../font/HyundaiSansHead-Light.woff") format("woff"), url("../font/HyundaiSansHead-Light.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: "HyundaiBold";
+  src: url("../font/HyundaiSansHead-Bold.woff2") format("woff2"), url("../font/HyundaiSansHead-Bold.woff") format("woff"), url("../font/HyundaiSansHead-Bold.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+/* [2022.10.20 : 최재영] WW : S - 미사용 font 제거 (58279#comment-538456) */
+/* @font-face{
+    font-family:'HyundaiKRRegular';
+    src:url("../font/HyundaiSansHeadKRRegular.woff2") format("woff2"),
+    url("../font/HyundaiSansHeadKRRegular.woff") format("woff"),
+    url("../font/HyundaiSansHeadKRRegular.ttf") format("truetype");
+    font-weight:normal;
+    font-style:normal;
+}*/
+/* [2022.10.20 : 최재영] WW : E - 미사용 font 제거 (58279#comment-538456) */
+@font-face {
+  font-family: "HyundaiKRMedium";
+  src: url("../font/HyundaiSansHeadKRMedium.woff2") format("woff2"), url("../font/HyundaiSansHeadKRMedium.woff") format("woff"), url("../font/HyundaiSansHeadKRMedium.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
 html {
   font-family: sans-serif;
   text-size-adjust: 100%;
