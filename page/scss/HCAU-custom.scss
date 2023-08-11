@@ -1,6 +1,7 @@
-#wrap{
-    display:flex;
+#wrap {
+    display: flex;
     min-height: 100vh;
+
     .HCAU-sidebar{
         background: #00AAD2;
         flex:0 0 3vw;
@@ -17,21 +18,41 @@
             text-align: right;
             font-size:2.5vw;
             border-right:1px solid #dedede;
+
         }
     }
-    .HCAU-container{
+    .HCAU-container {
         display: flex;
         flex-direction: column;
-        flex:1 1 75vw;
-        .HCAU-contents{
-            width:100%;
-           // border:1px solid;
-            flex:1 0 auto;
+        flex: 1 1 700px;
+        .HCAU-contents {
+            width: 975px;
+            border-left: 1px solid;
+            flex: 1 0 auto;
+            padding-left: 65px;
+            padding-top: 38px;
         }
-        .HCAU-footer{
-            height:80px;
-            background:#333;
-            color:#fff;
+        .HCAU-footer {
+            background: #323232;
+            color: #999;
+            .footer-inner{
+                width: 975px;
+                height: 80px;
+                padding-left: 65px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                .copyright{
+                    font-size: 12px;
+                }
+            }
+
         }
-      }
+    }
+}
+.HCAU-title{
+    .h1{font-size: 2.5rem;}
+}
+.HCAU-detail{
+    padding-top: 2.5rem;
 }
