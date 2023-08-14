@@ -1,0 +1,84 @@
+$primary-hd : #002C5F;
+$point-color-hd : #00aad2;
+$primary-black01 : #000;
+$primary-black02 : #444;
+$primary-black03 : #767676;
+$primary-black04 : #999;
+$border-color : #e5e5e5;
+
+.HCAU-breadcrumb {
+    .breadcrumb{margin-bottom: 80px;}
+}
+.HCAU-title{
+    padding-bottom:40px;
+    .title{font-size: 40px;}
+    .txt{font-size: 16px;}
+}
+.HCAU-detail{
+    > section{
+        // border: 1px solid #000;
+        & + section{margin-top: 60px;}
+        .title-area{
+            .title{font-size: 24px;font-weight: 700;}
+        }
+    }
+}
+.g-notice{
+    border-top: 1px dashed $primary-black03;
+    padding: 32px 0;
+    dl{
+        dt{
+            margin-bottom: 16px;
+            padding-left: 2px;
+            &::before{
+                content:'';
+                display: inline-block;
+                width: 18px;
+                height: 18px;
+                background: url(../img/ico/ico_notice.png) no-repeat 0 0;
+                vertical-align: text-top;
+            }
+        }
+        dd{
+            position: relative;
+            font-size: 14px;
+            color: $primary-black02;
+            padding-left: 11px;
+            &::before{
+                content:'';
+                display: inline-block;
+                width: 3px;
+                height: 3px;
+                background: $primary-black02;
+                border-radius: 100%;
+                position: absolute;
+                left:0;
+                top: 9px;
+            }
+            & + dd{margin-top: 14px;}
+            .link{
+                font-weight: 500;
+                color: $primary-hd;
+                margin-left: 4px;
+                &::after{
+                    content:'';
+                    display: inline-block;
+                    width: 8px;
+                    height: 8px;
+                    // margin-left: 2px;
+                    border-right: 1px solid $primary-hd;
+                    border-bottom: 1px solid $primary-hd;
+                    transform: rotate(-45deg);
+                }
+            }
+        }
+    }
+}
+
+.HACU-pagination{
+    .page-link{
+        border: none;
+        font-weight: 500;
+        color: $primary-black01;
+    }
+}
