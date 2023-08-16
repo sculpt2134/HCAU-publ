@@ -1,19 +1,43 @@
-$primary-hd : #002C5F;
-$point-color-hd : #00aad2;
-$primary-black01 : #000;
-$primary-black02 : #444;
-$primary-black03 : #767676;
-$primary-black04 : #999;
-$border-color : #e5e5e5;
+$primary : #002C5F;
+$secondary : #e4dcd3;
+$tertiary01 : #F6F3F2;
+$tertiary02 : #AACAE6;
+$point : #00aad2;
 
+$black : #000;
+$white : #fff;
+$gray100 : #F2F2F2;
+$gray200 : #efefef;
+$gray300 : #e5e5e5;
+$gray400 : #b7b7b7;
+$gray500 : #999;
+$gray600 : #767676;
+$gray700 : #666;
+$gray800 : #444;
+$gray900 : #323232;
+$gray1000 : #1c1b1b;
+
+strong{font-weight: 700;}
+
+.g08{gap: 8px;}
+.g12{gap: 12px;}
+.g20{gap: 20px;}
+
+
+
+//브레드크럼
 .HCAU-breadcrumb {
     .breadcrumb{margin-bottom: 80px;}
 }
+
+//타이틀
 .HCAU-title{
     padding-bottom:40px;
     .title{font-size: 40px;}
     .txt{font-size: 16px;}
 }
+
+//상세
 .HCAU-detail{
     > section{
         // border: 1px solid #000;
@@ -23,8 +47,10 @@ $border-color : #e5e5e5;
         }
     }
 }
+
+//안내
 .g-notice{
-    border-top: 1px dashed $primary-black03;
+    border-top: 1px dashed $gray600;
     padding: 32px 0;
     dl{
         dt{
@@ -42,43 +68,225 @@ $border-color : #e5e5e5;
         dd{
             position: relative;
             font-size: 14px;
-            color: $primary-black02;
+            color: $gray800;
             padding-left: 11px;
             &::before{
                 content:'';
                 display: inline-block;
                 width: 3px;
                 height: 3px;
-                background: $primary-black02;
+                background: $gray800;
                 border-radius: 100%;
                 position: absolute;
                 left:0;
                 top: 9px;
+                .link{margin-left: 4px;}
             }
             & + dd{margin-top: 14px;}
-            .link{
-                font-weight: 500;
-                color: $primary-hd;
-                margin-left: 4px;
-                &::after{
-                    content:'';
-                    display: inline-block;
-                    width: 8px;
-                    height: 8px;
-                    // margin-left: 2px;
-                    border-right: 1px solid $primary-hd;
-                    border-bottom: 1px solid $primary-hd;
-                    transform: rotate(-45deg);
-                }
-            }
         }
     }
 }
 
-.HACU-pagination{
-    .page-link{
-        border: none;
-        font-weight: 500;
-        color: $primary-black01;
+//링크
+.link{
+    font-weight: 500;
+    color: $primary;
+    // margin-left: 4px;
+    text-decoration: none;
+    &::after{
+        content:'';
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-right: 1px solid $primary;
+        border-bottom: 1px solid $primary;
+        transform: rotate(-45deg);
     }
+}
+
+//pagination
+.HACU-pagination{
+    margin-top: 40px;
+    .page-item{
+        &.active .page-link{
+            background: none;
+            color: $point;
+        }
+        .page-link{
+            border: none;
+            font-weight: 500;
+            color: $black;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            text-align: center;
+            padding: 0 2px;
+        }
+        .page-link:hover{
+            background: none;
+        }
+    }
+}
+
+
+//버튼
+.HCAU-btn{
+    display: inline-block;
+    vertical-align: middle;
+    text-decoration: none;
+    color: $black;
+    font-weight: 500;
+    border-radius: 4px;
+    background: $white;
+    border: 1px solid $black;
+    //버튼 사이즈
+    &.btn-sm{
+        font-size: 14px;
+        min-height: 30px;
+        padding: 3px 16px;
+        & + .btn-sm{
+            margin-left: 4px;
+        }
+    }
+    &.btn-md{
+        font-size: 16px;
+        font-weight: 700;
+        min-height: 48px;
+        min-width: 120px;
+        text-align: center;
+        padding: 11px 16px;
+    }
+    &.btn-large{
+        font-size: 16px;
+        font-weight: 700;
+        min-height: 52px;
+        min-width: 123px;
+        text-align: center;
+        padding: 13px 16px;
+    }
+    //버튼컬러
+    &.primary{
+        background: $primary;
+        border: 1px solid $primary;
+        color: $white;
+    }
+    &.gray200{
+        background: $gray200;
+        border: 1px solid $gray300;
+        color: $black;
+    }
+    &.gray600{
+        background: $gray600;
+        border: 1px solid $gray600;
+        color: $white;
+    }
+    &:disabled{
+        border: 1px solid $gray300;
+        background: $gray200;
+        color: $gray500;
+    }
+}
+
+.d-flex.full{
+    button,
+    a{
+        flex: 1 1 0;
+    }
+}
+
+//탭메뉴
+.HCAU-tab{
+    .nav-tabs{
+        border-bottom: 1px solid $black;
+        .nav-link{
+            border-color: #ddd;
+            border-bottom-color: $black;
+            color: $gray500;
+            background: #f5f5f5;
+            font-weight: 700;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .nav-link.active{
+            border-color: $black;
+            border-bottom-color: $white;
+            background: $white;
+            color: $black;
+        }
+    }
+}
+
+.HCAU-badge{
+    display: inline-block;
+    font-size: 12px;
+    padding:0 8px;
+    border-radius: 15px;
+    &.type01{color: #ea0029;background: #FEEBEE;}
+    &.type02{color: $primary;background: #EBEFF3;}
+    &.type03{}
+}
+
+//스텝
+.HCAU-step{
+    display: flex;
+    gap: 20px;
+    .step-item{
+        position: relative;
+        border: 2px solid $gray300;
+        border-radius: 36px;
+        flex-grow:0;
+        flex-shrink:0;
+        flex-basis: 36px;
+        height: 36px;
+        align-items:center;
+        justify-content: center;
+        display: flex;
+        .num{font-size: 15px;font-weight: 600;}
+        .txt{
+            display: none;
+        }
+    }
+    .step-item.active{
+        flex-basis:auto;
+        padding-left: 5px;
+        border-color: $primary;
+        .num{
+            background: $primary;
+            color: $white;
+            width: 26px;
+            height: 26px;
+            border-radius: 100%;
+            line-height: 26px;
+            text-align: center;
+        }
+        .txt{
+            display: block;
+            padding: 0 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        // flex-grow: 1;
+    }
+    .step-item + .step-item:before{
+        content:'';
+        display: block;
+        width: 20px;
+        height: 2px;
+        background: $gray300;
+        position: absolute;
+        left: -22px;top: 50%;
+    }
+}
+
+//폰트사이즈
+.HCAU-h1{color: $black;font-size: 40px;text-transform: uppercase;font-weight: 700;}
+.HCAU-h2{color: $black;font-size: 24px;font-weight: 700;}
+.HCAU-lead-txt{color: $black;font-size: 20px;}
+.HCAU-txt-lg{color: $black;font-size: 18px;}
+.HCAU-txt-md{color: $black;font-size: 16px;}
+.HCAU-txt-sm{color: $black;font-size: 14px;}
+
+.border-box{
+    border: 1px solid $gray300;
+    border-radius: 4px;
 }
