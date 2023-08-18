@@ -1,29 +1,49 @@
 $primary : #002C5F;
-$secondary : #e4dcd3;
-$tertiary01 : #F6F3F2;
-$tertiary02 : #AACAE6;
+$secondary01 : #e4dcd3;
+$secondary02 : #F6F3F2;
 $point : #00aad2;
+$point-red : #E63312;
+$point-red-rgb : rgba(230, 51, 18, 0.05);
+$border-color : #ddd;
 
-$black : #000;
 $white : #fff;
-$gray100 : #F2F2F2;
-$gray200 : #efefef;
-$gray300 : #e5e5e5;
-$gray400 : #b7b7b7;
-$gray500 : #999;
-$gray600 : #767676;
-$gray700 : #666;
-$gray800 : #444;
-$gray900 : #323232;
-$gray1000 : #1c1b1b;
+$gray01 : #f5f5f5;
+$gray02 : #e5e5e5;
+$gray03 : #999;
+$gray04 : #444;
+$black : #000;
+
+.white{color: $white !important;}
+.gray01{color : $gray01 !important;}
+.gray02{color : $gray02 !important;}
+.gray03{color : $gray03 !important;}
+.gray04{color : $gray04 !important;}
+.black{color: $black !important;}
+.point-red{color: $point-red !important;}
 
 strong{font-weight: 700;}
 
 .g08{gap: 8px;}
 .g12{gap: 12px;}
+.g16{gap: 16px;}
 .g20{gap: 20px;}
 
+.p10{padding: 10px;}
+.p20{padding: 20px;}
+.pt12{padding-top: 12px;}
+.pt20{padding-top: 20px;}
 
+.px24{padding-top: 24px;padding-bottom: 24px;}
+.py32{padding-left: 32px;padding-right: 32px;}
+
+
+.fw400{font-weight: 400;}
+.fw500{font-weight: 500;}
+.fw600{font-weight: 600;}
+.fw700{font-weight: 700;}
+
+.text-right{text-align: right;}
+.text-center{text-align: center;}
 
 //브레드크럼
 .HCAU-breadcrumb {
@@ -43,14 +63,16 @@ strong{font-weight: 700;}
         // border: 1px solid #000;
         & + section{margin-top: 60px;}
         .title-area{
+            margin-bottom: 20px;
             .title{font-size: 24px;font-weight: 700;}
+            .sub-title{font-size: 14px;color: $gray04;}
         }
     }
 }
 
 //안내
 .g-notice{
-    border-top: 1px dashed $gray600;
+    border-top: 1px dashed $gray03;
     padding: 32px 0;
     dl{
         dt{
@@ -65,27 +87,35 @@ strong{font-weight: 700;}
                 vertical-align: text-top;
             }
         }
-        dd{
-            position: relative;
-            font-size: 14px;
-            color: $gray800;
-            padding-left: 11px;
-            &::before{
-                content:'';
-                display: inline-block;
-                width: 3px;
-                height: 3px;
-                background: $gray800;
-                border-radius: 100%;
-                position: absolute;
-                left:0;
-                top: 9px;
-                .link{margin-left: 4px;}
-            }
-            & + dd{margin-top: 14px;}
-        }
     }
 }
+
+//bullet list
+.HCAU-bullet-list{
+    li{
+        position: relative;
+        font-size: 14px;
+        color: $gray04;
+        padding-left: 11px;
+        &::before{
+            content:'';
+            display: inline-block;
+            width: 3px;
+            height: 3px;
+            background: $gray04;
+            border-radius: 100%;
+            position: absolute;
+            left:0;
+            top: 9px;
+        }
+        .link{margin-left: 4px;}
+        & + li{margin-top: 9px;}
+    }
+    .point-red:before{
+        background-color: $point-red;
+    }
+}
+
 
 //링크
 .link{
@@ -93,6 +123,7 @@ strong{font-weight: 700;}
     color: $primary;
     // margin-left: 4px;
     text-decoration: none;
+    font-size: 14px;
     &::after{
         content:'';
         display: inline-block;
@@ -170,20 +201,30 @@ strong{font-weight: 700;}
         border: 1px solid $primary;
         color: $white;
     }
-    &.gray200{
-        background: $gray200;
-        border: 1px solid $gray300;
+    &.gray01{
+        background: $gray01;
+        border: 1px solid $gray02;
         color: $black;
     }
-    &.gray600{
-        background: $gray600;
-        border: 1px solid $gray600;
+    &.gray03{
+        background: $gray03;
+        border: 1px solid $gray03;
         color: $white;
     }
     &:disabled{
-        border: 1px solid $gray300;
-        background: $gray200;
-        color: $gray500;
+        border: 1px solid $gray02;
+        background: $gray02;
+        color: $gray03;
+    }
+    //아이콘
+    .ico-print{
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        background: url(../img/ico/ico_print.png) no-repeat 0 0;
+        vertical-align: bottom;
+        text-indent: -9999px;
+        // margin-left: 4px;
     }
 }
 
@@ -201,7 +242,7 @@ strong{font-weight: 700;}
         .nav-link{
             border-color: #ddd;
             border-bottom-color: $black;
-            color: $gray500;
+            color: $gray03;
             background: #f5f5f5;
             font-weight: 700;
             border-top-left-radius: 8px;
@@ -216,14 +257,15 @@ strong{font-weight: 700;}
     }
 }
 
+//badge
 .HCAU-badge{
     display: inline-block;
     font-size: 12px;
     padding:0 8px;
     border-radius: 15px;
+    vertical-align: text-bottom;
     &.type01{color: #ea0029;background: #FEEBEE;}
     &.type02{color: $primary;background: #EBEFF3;}
-    &.type03{}
 }
 
 //스텝
@@ -232,7 +274,7 @@ strong{font-weight: 700;}
     gap: 20px;
     .step-item{
         position: relative;
-        border: 2px solid $gray300;
+        border: 2px solid $gray02;
         border-radius: 36px;
         flex-grow:0;
         flex-shrink:0;
@@ -272,7 +314,7 @@ strong{font-weight: 700;}
         display: block;
         width: 20px;
         height: 2px;
-        background: $gray300;
+        background: $gray02;
         position: absolute;
         left: -22px;top: 50%;
     }
@@ -286,7 +328,142 @@ strong{font-weight: 700;}
 .HCAU-txt-md{color: $black;font-size: 16px;}
 .HCAU-txt-sm{color: $black;font-size: 14px;}
 
+//border-box
 .border-box{
-    border: 1px solid $gray300;
+    border: 1px solid $gray02;
     border-radius: 4px;
+}
+
+.bg-box{
+    background: $gray01;
+    border-radius: 4px;
+}
+
+.flex-box{
+    display: flex;
+    .flex-item{
+        flex:1 0 0;
+    }
+}
+
+//form text, select
+.HCAU-form.form-control,
+.HCAU-form.form-select{
+    font-size: 14px;
+    line-height: 1.429;
+    padding: 11px 16px;
+    color: $black;
+    border-color : $border-color;
+    box-shadow: none;
+}
+.HCAU-form.form-control:focus,
+.HCAU-form.form-select:focus{
+    border-color: $point;
+    outline: 1px solid $point;
+}
+.HCAU-form.form-control:disabled,
+.HCAU-form.form-select:disabled{
+    background-color: $gray01;
+    color: $gray03;
+}
+
+//form check, radio
+.HCAU-form.form-check-input{
+    width: 20px;
+    height: 20px;
+    box-shadow: none;
+    border-color: $border-color;
+    & + label{
+        vertical-align: bottom;
+        font-size: 14px;
+        margin-left: 2px;
+    }
+}
+.HCAU-form.form-check-input[type=checkbox]{
+    background-image: url(../img/bg/bg_input_check.svg);
+    background-size: 14px 14px;
+    &:checked{
+        background-color: $primary;
+        border-color: $primary;
+        background-image: url(../img/bg/bg_input_check_on.svg);
+        background-size: 14px 14px;
+    }
+}
+.HCAU-form.form-check-input:checked[type=radio]{
+    background-color: $white;
+    border-color: $primary;
+    background-image: url(../img/bg/bg_input_radio_on.svg);
+    background-size: 14px 14px;
+}
+
+//테이블
+.HCAU-table{
+    .table{
+        &.fixed{table-layout: fixed;}
+        border-top: 1px solid $border-color;
+        margin-bottom: 0;
+        th,td{
+            font-size: 14px;
+            border-color: $border-color;
+        }
+        th{
+            padding: 20px;
+            background: $secondary02;
+        }
+        td{
+            padding: 16px 20px;
+        }
+        .table-active td{
+            background:$point-red-rgb;
+            box-shadow: none;
+        }
+        .tb-inner-flex{
+            > div{
+                display: flex;
+                gap: 16px;
+                & + div{
+                    margin-top: 4px;
+                }
+            }
+            .separator{
+                span + span::before{
+                    content:'';
+                    display: inline-block;
+                    width: 1px;
+                    height: 14px;
+                    background: $secondary01;
+                    position: relative;
+                    left: -8px;
+                    top: 3px;
+                }
+            }
+        }
+    }
+}
+
+.HCAU-modal{
+    .modal-dialog{
+        background: red;
+        max-width: 800px;
+        .modal-content{
+            position: relative;
+            padding: 40px;
+            .modal-header{
+                display: block;
+                padding: 0;
+            }
+            .modal-body{
+                padding: 0;
+            }
+            .modal-footer{
+                padding: 0;
+            }
+        }
+    }
+    .btn-close{
+        opacity: 1;
+        position: absolute;
+        right: 40px;
+        top: 40px;
+    }
 }
