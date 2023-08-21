@@ -79,32 +79,117 @@
                 <div class="HCAU-detail">
 
 
+                    <section>
+                        <div class="title-area d-flex align-items-baseline g16">
+                            <div class="title">Layer popup</div>
+                        </div>
+                        <div>
 
-                    <!-- Button trigger modal -->
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
-                        popup sample
-                    </button>
+                            <!-- Button trigger modal -->
+                            <button type="button" class="HCAU-btn" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                                modal sample
+                            </button>
 
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">login</button>
+                            <button type="button" class="HCAU-btn primary" data-bs-toggle="modal" data-bs-target="#loginModal">login</button>
 
-                    <!-- Modal -->
-                    <div class="HCAU-modal modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    ...
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                    <button type="button" class="btn btn-primary">Save changes</button>
+                            <!-- Modal -->
+                            <div class="HCAU-modal modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <div class="HCAU-h2" id="exampleModalLabel">Get a copy of your billing statement via email</div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <ul class="HCAU-bullet-list">
+                                                <li>
+                                                    We will send a copy of your billing statement to the email address associated with your account.
+                                                </li>
+                                                <li>
+                                                    If you want to change your email address, please update your personal information first.<br>
+                                                    <a href="#none" class="link">Change your personal info</a>
+                                                </li>
+                                            </ul>
+                                            <div class="pt40">
+                                                <input type="email" class="form-control HCAU-form" id="exampleInputEmail1" aria-describedby="emailHelp" value="hyundai@hyundaicapital.com" disabled="">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <div class="d-flex g12 justify-content-center">
+                                                <button type="button" class="HCAU-btn btn-large primary">Request statements</button>
+                                                <!-- <button type="button" class="HCAU-btn btn-large" data-bs-dismiss="modal">Close</button>
+                                                <button type="button" class="HCAU-btn btn-large">Save changes</button> -->
+                                                <!-- <button type="button" class="HCAU-btn btn-large">button</button>
+                                                <a href="#none" class="HCAU-btn btn-large">a link</a>
+                                                <a href="#none" class="HCAU-btn btn-large">a link</a> -->
+                                            </div>
+
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- Modal -->
+                            <div class="HCAU-modal login modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <div class="HCAU-h2" id="exampleModalLabel">Login</div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+
+                                        <!-- modal-body -->
+                                        <div class="modal-body">
+                                            <!-- HCAU-tab -->
+                                            <div class="HCAU-tab">
+                                                <ul class="nav nav-tabs">
+                                                    <li class="nav-item">
+                                                        <a class="nav-link active" aria-current="page" href="#none">Individual</a>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <a class="nav-link" href="#none">Businessman</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <!-- //HCAU-tab -->
+
+                                            <div class="pt40">
+                                                <div>
+                                                    <input type="email" class="form-control HCAU-form" id="exampleInputEmail1" aria-describedby="emailHelp" value="" placeholder="E-mail">
+                                                </div>
+                                                <div class="pt20">
+                                                    <input type="password" class="form-control HCAU-form" id="exampleInputPassword1" placeholder="password">
+                                                </div>
+                                            </div>
+                                            <div class="pt40 d-flex full">
+                                                <button type="button" class="HCAU-btn btn-large primary">Log in</button>
+                                            </div>
+                                            <div class="d-flex align-items-baseline g20 pt20">
+                                                <div><a href="#none" class="link">Find ID</a></div>
+                                                <div><a href="#none" class="link">Find Password</a></div>
+                                                <div class="ms-auto">
+                                                    <a href="#none" class="link">Sign up</a>
+                                                </div>
+                                            </div>
+                                            <ul class="HCAU-bullet-list pt40">
+                                                <li>
+                                                    To protect your information, you will be automatically logged out if you do not use the service for more than 10 minutes.
+                                                </li>
+                                                <li>
+                                                    If you enter an incorrect password 5 times in a row, you must change your password after verifying your identity.
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <!-- //modal-body -->
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
-                    </div>
+
+                    </section>
+
+
 
 
                     <section>
@@ -720,9 +805,7 @@
                                         </li>
                                         <li>
                                             Details of the payment amount are available through the payment history.
-                                            <a href="#none" class="link">
-                                                Payment details
-                                            </a>
+                                            <a href="#none" class="link">Payment details</a>
                                         </li>
                                         <li>
                                             You can view and print the entire redemption schedule for products that are in use or terminated.
@@ -739,13 +822,24 @@
 
                         <!-- flex-box -->
                         <div class="flex-box g20">
-                            <div class="flex-item border-box px24 py32">
+                            <div class="flex-item border-box py24 px32">
                                 <p class="HCAU-txt-sm">Do you want to make a payment before your due date?</p>
                                 <p class="pt12"><a href="#none" class="link">Make a payment</a></p>
                             </div>
-                            <div class="flex-item border-box px24 py32">
+                            <div class="flex-item border-box py24 px32">
                                 <p class="HCAU-txt-sm">Do you want to pay off all or part of your loan early?</p>
                                 <p class="pt12"><a href="#none" class="link">pay off early</a></p>
+                            </div>
+                        </div>
+                        <!-- //flex-box -->
+                        <br>
+                        <!-- flex-box -->
+                        <div class="flex-box g20">
+                            <div class="flex-item border-box py24 px32">
+                                <p class="HCAU-txt-sm">flex-box > flex-item</p>
+                            </div>
+                            <div class="flex-item border-box py24 px32">
+                                <p class="HCAU-txt-sm">flex-box > flex-item</p>
                             </div>
                         </div>
                         <!-- //flex-box -->
@@ -779,9 +873,74 @@
                         <div class="border-box p20">
                             border-box p20 == 20px
                         </div>
+                        <div class="border-box p32">
+                            border-box p32 == 32px
+                        </div>
 
                         <div class="bg-box">
                             bg-box
+                        </div>
+
+                    </section>
+
+                    <section>
+                        <div class="title-area d-flex align-items-baseline g16">
+                            <div class="title">Payment information</div>
+                            <!-- <div class="sub-title">Reference date : 2023.12.31</div>
+                            <div class="ms-auto">
+                                <button type="button" class="HCAU-btn btn-sm">default</button>
+                            </div> -->
+                        </div>
+
+                        <div class="border-box p32 d-flex g96">
+                            <dl>
+                                <dt class="HCAU-txt-sm gray04">Payment Cycle / Payment Date</dt>
+                                <dd class="HCAU-txt-md fw700">Monthly / 11th of every month</dd>
+                            </dl>
+                            <dl>
+                                <dt class="HCAU-txt-sm gray04">Payment method / payment account</dt>
+                                <dd class="HCAU-txt-md fw700">Direct Debit / KB Bank 811**********1</dd>
+                            </dl>
+                            <dl>
+                                <dt class="HCAU-txt-sm gray04">How to receive statement</dt>
+                                <dd class="HCAU-txt-md fw700">No Send</dd>
+                            </dl>
+                        </div>
+
+                        <div class="d-flex full g20 pt20">
+                            <button type="button" class="HCAU-btn btn-md">Pay the bill</button>
+                            <button type="button" class="HCAU-btn btn-md">Prepayment</button>
+                            <button type="button" class="HCAU-btn btn-md">Payment information inquiry</button>
+                        </div>
+
+                        <br>
+
+                        <div class="border-box p32 flex-box">
+                            <div class="flex-item">flex-item</div>
+                            <div class="flex-item">flex-item</div>
+                            <div class="flex-item">flex-item</div>
+                        </div>
+
+                    </section>
+
+                    <section>
+                        <div class="title-area d-flex align-items-baseline g16">
+                            <div class="title">Payment information</div>
+                            <!-- <div class="sub-title">Reference date : 2023.12.31</div>
+                            <div class="ms-auto">
+                                <button type="button" class="HCAU-btn btn-sm">default</button>
+                            </div> -->
+                        </div>
+
+                        <div class="border-box p20">
+                            <div class="bg-box d-flex justify-content-between px32 py16">
+                                <div class="HCAU-lead-txt fw700">NewCar Loan_Standard</div>
+                                <div class="HCAU-lead-txt fw700">97356178021750</div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between px32 py35 border-bottom">
+                                <div class="HCAU-txt-md">15th payment</div>
+                                <div class="HCAU-h2">$ 2,034.00</div>
+                            </div>
                         </div>
 
                     </section>

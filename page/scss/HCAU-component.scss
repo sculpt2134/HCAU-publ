@@ -23,18 +23,25 @@ $black : #000;
 
 strong{font-weight: 700;}
 
+dt{font-weight: 400;}
+
 .g08{gap: 8px;}
 .g12{gap: 12px;}
 .g16{gap: 16px;}
 .g20{gap: 20px;}
+.g96{gap: 96px;}
 
 .p10{padding: 10px;}
 .p20{padding: 20px;}
+.p32{padding: 32px;}
 .pt12{padding-top: 12px;}
 .pt20{padding-top: 20px;}
+.pt40{padding-top: 40px;}
 
-.px24{padding-top: 24px;padding-bottom: 24px;}
-.py32{padding-left: 32px;padding-right: 32px;}
+.py16{padding-top: 16px;padding-bottom: 16px;}
+.py24{padding-top: 24px;padding-bottom: 24px;}
+.py35{padding-top: 35px;padding-bottom: 35px;}
+.px32{padding-left: 32px;padding-right: 32px;}
 
 
 .fw400{font-weight: 400;}
@@ -44,6 +51,17 @@ strong{font-weight: 700;}
 
 .text-right{text-align: right;}
 .text-center{text-align: center;}
+
+.border-bottom{border-bottom:1px solid $border-color;}
+.border-top{border-top:1px solid $border-color;}
+
+//폰트사이즈
+.HCAU-h1{color: $black;font-size: 40px;text-transform: uppercase;font-weight: 700;}
+.HCAU-h2{color: $black;font-size: 24px;font-weight: 700;}
+.HCAU-lead-txt{color: $black;font-size: 20px;}
+.HCAU-txt-lg{color: $black;font-size: 18px;}
+.HCAU-txt-md{color: $black;font-size: 16px;}
+.HCAU-txt-sm{color: $black;font-size: 14px;}
 
 //브레드크럼
 .HCAU-breadcrumb {
@@ -127,11 +145,12 @@ strong{font-weight: 700;}
     &::after{
         content:'';
         display: inline-block;
-        width: 8px;
-        height: 8px;
+        width: 7px;
+        height: 7px;
         border-right: 1px solid $primary;
         border-bottom: 1px solid $primary;
         transform: rotate(-45deg);
+        margin-left: 5px;
     }
 }
 
@@ -195,21 +214,22 @@ strong{font-weight: 700;}
         text-align: center;
         padding: 13px 16px;
     }
+    &.full{width: 100%;}
     //버튼컬러
     &.primary{
         background: $primary;
         border: 1px solid $primary;
-        color: $white;
+        color: $white !important;
     }
     &.gray01{
         background: $gray01;
         border: 1px solid $gray02;
-        color: $black;
+        color: $black !important;
     }
     &.gray03{
         background: $gray03;
         border: 1px solid $gray03;
-        color: $white;
+        color: $white !important;
     }
     &:disabled{
         border: 1px solid $gray02;
@@ -229,8 +249,9 @@ strong{font-weight: 700;}
 }
 
 .d-flex.full{
+    a,
     button,
-    a{
+    div{
         flex: 1 1 0;
     }
 }
@@ -247,6 +268,8 @@ strong{font-weight: 700;}
             font-weight: 700;
             border-top-left-radius: 8px;
             border-top-right-radius: 8px;
+            padding-left: 40px;
+            padding-right: 40px;
         }
         .nav-link.active{
             border-color: $black;
@@ -320,14 +343,6 @@ strong{font-weight: 700;}
     }
 }
 
-//폰트사이즈
-.HCAU-h1{color: $black;font-size: 40px;text-transform: uppercase;font-weight: 700;}
-.HCAU-h2{color: $black;font-size: 24px;font-weight: 700;}
-.HCAU-lead-txt{color: $black;font-size: 20px;}
-.HCAU-txt-lg{color: $black;font-size: 18px;}
-.HCAU-txt-md{color: $black;font-size: 16px;}
-.HCAU-txt-sm{color: $black;font-size: 14px;}
-
 //border-box
 .border-box{
     border: 1px solid $gray02;
@@ -371,7 +386,7 @@ strong{font-weight: 700;}
 .HCAU-form.form-check-input{
     width: 20px;
     height: 20px;
-    box-shadow: none;
+    // box-shadow: none;
     border-color: $border-color;
     & + label{
         vertical-align: bottom;
@@ -441,9 +456,9 @@ strong{font-weight: 700;}
     }
 }
 
+// modal 공통
 .HCAU-modal{
     .modal-dialog{
-        background: red;
         max-width: 800px;
         .modal-content{
             position: relative;
@@ -451,19 +466,37 @@ strong{font-weight: 700;}
             .modal-header{
                 display: block;
                 padding: 0;
+                border: none;
+                margin-bottom: 28px;
+                .HCAU-h2{
+                    margin-top: 34px;
+                }
+                .btn-close{
+                    opacity: 1;
+                    position: absolute;
+                    right: 40px;
+                    top: 40px;
+                    padding: 0;
+                    width: 24px;
+                    height: 24px;
+                    background-image: url(../img/ico/ico_modal_close.png);
+                }
             }
             .modal-body{
                 padding: 0;
             }
             .modal-footer{
+                display: block;
                 padding: 0;
+                border: none;
+                margin-top: 60px;
+                * {margin: 0;}
             }
         }
     }
-    .btn-close{
-        opacity: 1;
-        position: absolute;
-        right: 40px;
-        top: 40px;
+}
+.HCAU-modal.login{
+    .modal-dialog{
+        max-width:480px;
     }
 }
