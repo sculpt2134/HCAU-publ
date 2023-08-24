@@ -13,24 +13,14 @@ $gray03 : #999;
 $gray04 : #444;
 $black : #000;
 
-.white{color: $white !important;}
-.gray01{color : $gray01 !important;}
-.gray02{color : $gray02 !important;}
-.gray03{color : $gray03 !important;}
-.gray04{color : $gray04 !important;}
-.black{color: $black !important;}
-.point-red{color: $point-red !important;}
-
-strong{font-weight: 700;}
-
-dt{font-weight: 400;}
-
 .g08{gap: 8px;}
 .g12{gap: 12px;}
 .g16{gap: 16px;}
 .g20{gap: 20px;}
 .g40{gap: 40px;}
 .g96{gap: 96px;}
+
+.g-column
 
 .p10{padding: 10px;}
 .p20{padding: 20px;}
@@ -41,30 +31,36 @@ dt{font-weight: 400;}
 .pt40{padding-top: 40px;}
 
 .py16{padding-top: 16px;padding-bottom: 16px;}
+.py20{padding-top: 20px;padding-bottom: 20px;}
 .py24{padding-top: 24px;padding-bottom: 24px;}
 .py35{padding-top: 35px;padding-bottom: 35px;}
 .px32{padding-left: 32px;padding-right: 32px;}
 
 .mt20{margin-top: 20px;}
 
-.fw400{font-weight: 400;}
-.fw500{font-weight: 500;}
-.fw600{font-weight: 600;}
-.fw700{font-weight: 700;}
 
-.text-right{text-align: right;}
-.text-center{text-align: center;}
+.fw500{font-weight: 500;}
+
 
 .border-bottom{border-bottom:1px solid $border-color;}
 .border-top{border-top:1px solid $border-color;}
 
-//폰트사이즈
+//폰트 사이즈
 .HCAU-h1{color: $black;font-size: 40px;text-transform: uppercase;font-weight: 700;}
 .HCAU-h2{color: $black;font-size: 24px;font-weight: 700;}
 .HCAU-lead-txt{color: $black;font-size: 20px;}
 .HCAU-txt-lg{color: $black;font-size: 18px;}
 .HCAU-txt-md{color: $black;font-size: 16px;}
 .HCAU-txt-sm{color: $black;font-size: 14px;}
+
+//폰트 컬러
+.white{color: $white}
+.gray01{color : $gray01}
+.gray02{color : $gray02}
+.gray03{color : $gray03}
+.gray04{color : $gray04}
+.black{color: $black}
+.point-red{color: $point-red}
 
 //브레드크럼
 .HCAU-breadcrumb {
@@ -74,8 +70,10 @@ dt{font-weight: 400;}
 //타이틀
 .HCAU-title{
     padding-bottom:40px;
-    .title{font-size: 40px;}
-    .txt{font-size: 16px;}
+    .HCAU-txt-lg{
+        color: $gray04;
+    }
+
 }
 
 //상세
@@ -97,8 +95,9 @@ dt{font-weight: 400;}
     padding: 32px 0;
     dl{
         dt{
+            font-size: 14px;
+            font-weight: 700;
             margin-bottom: 16px;
-            padding-left: 2px;
             &::before{
                 content:'';
                 display: inline-block;
@@ -106,6 +105,7 @@ dt{font-weight: 400;}
                 height: 18px;
                 background: url(../img/ico/ico_notice.png) no-repeat 0 0;
                 vertical-align: text-top;
+                margin-right: 2px;
             }
         }
     }
@@ -123,8 +123,8 @@ dt{font-weight: 400;}
             display: inline-block;
             width: 3px;
             height: 3px;
+            border-radius: 3px;
             background: $gray04;
-            border-radius: 100%;
             position: absolute;
             left:0;
             top: 9px;
@@ -132,6 +132,7 @@ dt{font-weight: 400;}
         .link{margin-left: 4px;}
         & + li{margin-top: 9px;}
     }
+    .point-red{color: $point-red;}
     .point-red:before{
         background-color: $point-red;
     }
@@ -201,6 +202,14 @@ dt{font-weight: 400;}
             margin-left: 4px;
         }
     }
+    &.btn-smd{
+        font-size: 14px;
+        font-weight: 500;
+        min-height: 44px;
+        // min-width: 120px;
+        text-align: center;
+        padding: 10px 16px;
+    }
     &.btn-md{
         font-size: 16px;
         font-weight: 700;
@@ -218,21 +227,41 @@ dt{font-weight: 400;}
         padding: 13px 16px;
     }
     &.full{width: 100%;}
+    &.dropdown-toggle{
+        font-size: 14px;
+        line-height: 1.429;
+        padding: 11px 54px 11px 16px;
+        color: $black;
+        border-color : $border-color;
+        box-shadow: none;
+        width: 100%;
+        text-align: left;
+        position: relative;
+        &::after{
+            border-top-width: 5px;
+            border-right-width: 5px;
+            border-left-width: 5px;
+            position: absolute;
+            right: 23px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+    }
     //버튼컬러
     &.primary{
         background: $primary;
         border: 1px solid $primary;
-        color: $white !important;
+        color: $white;
     }
     &.gray01{
         background: $gray01;
         border: 1px solid $gray02;
-        color: $black !important;
+        color: $black;
     }
     &.gray03{
         background: $gray03;
         border: 1px solid $gray03;
-        color: $white !important;
+        color: $white;
     }
     &:disabled{
         border: 1px solid $gray02;
@@ -357,12 +386,12 @@ dt{font-weight: 400;}
     border-radius: 4px;
 }
 
-.flex-box{
-    display: flex;
-    .flex-item{
-        flex:1 0 0;
-    }
-}
+// .flex-box{
+//     display: flex;
+//     .flex-item{
+//         flex:1 0 0;
+//     }
+// }
 
 //form text, select
 .HCAU-form.form-control,
@@ -373,9 +402,11 @@ dt{font-weight: 400;}
     color: $black;
     border-color : $border-color;
     box-shadow: none;
+    border-radius: 4px;
 }
 .HCAU-form.form-control:focus,
-.HCAU-form.form-select:focus{
+.HCAU-form.form-select:focus,
+.HCAU-btn.dropdown-toggle:focus{
     border-color: $point;
     outline: 1px solid $point;
 }
@@ -458,6 +489,10 @@ dt{font-weight: 400;}
         }
     }
 }
+.HCAU-table.type02{
+    th,
+    td{padding-top: 28px;padding-bottom: 28px;}
+}
 
 // modal 공통
 .HCAU-modal{
@@ -501,5 +536,125 @@ dt{font-weight: 400;}
 .HCAU-modal.login{
     .modal-dialog{
         max-width:480px;
+    }
+}
+.HCAU-search-bar{
+    .HCAU-btn.dropdown-toggle{min-width: 153px;}
+    .search-btn{flex-basis:146px}
+}
+.radio-group{
+    display: flex;
+    border: 1px solid $border-color;
+    border-radius: 4px;
+    overflow: hidden;
+    > div + div{
+        border-left: 1px solid $border-color;
+    }
+    .HCAU-btn{
+        border: none;
+        border-radius: 0;
+        min-height: 42px;
+
+    }
+    input[type="radio"]:checked + .HCAU-btn{
+        background: $black;
+        color: $white;
+    }
+}
+
+.dropdown-menu{
+    width: 100%;
+    padding:0;
+    overflow: hidden;
+    li{font-size: 14px;}
+    li:hover a{background: none;}
+    li:nth-child(2n-1){
+        background:$gray01;
+    }
+    .dropdown-item{
+        padding-top: 14px;
+        padding-bottom: 14px;
+    }
+}
+
+// nodata
+.HCAU-nodata.type01{
+    display: flex;
+    justify-content: center;
+    align-items:center;
+    .HCAU-lead-txt{padding: 120px 0;font-weight: 700;}
+    .HCAU-lead-txt:before{
+        content:'';
+        display: block;
+        width: 100%;
+        height: 100px;
+        background: url(../img/ico/ico_no_matches_hd01.png) no-repeat 50% 0;
+        margin-bottom: 16px;
+    }
+}
+.HCAU-nodata.type02{
+    display: flex;
+    justify-content: center;
+    align-items:center;
+    .HCAU-txt-sm{padding: 84px 0;font-weight: 700;}
+    .HCAU-txt-sm:before{
+        content:'';
+        display: block;
+        width: 100%;
+        height: 48px;
+        background: url(../img/ico/ico_no_matches_hd02.png) no-repeat 50% 0;
+        margin-bottom: 8px;
+    }
+}
+
+.ico-loan-btn{
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: url(../img/ico/ico_loan_btn.png) no-repeat 0 0;
+}
+
+// loan-items
+.loan-items-wrap{
+    row-gap: 20px;
+    column-gap: 85px;
+}
+.loan-items{
+    width: 350px;
+    .loan-items-ico{
+        float:left;
+        width: 40px;
+        height: 40px;
+        background-repeat: no-repeat;
+        background-position: 0 0;
+        &.ico01{
+            background-image: url(../img/ico/ico_loan01.png);
+        }
+        &.ico02{
+            background-image: url(../img/ico/ico_loan02.png);
+        }
+        &.ico03{
+            background-image: url(../img/ico/ico_loan03.png);
+        }
+        &.ico04{
+            background-image: url(../img/ico/ico_loan04.png);
+        }
+        &.ico05{
+            background-image: url(../img/ico/ico_loan05.png);
+        }
+        &.ico06{
+            background-image: url(../img/ico/ico_loan06.png);
+        }
+        &.ico07{
+            background-image: url(../img/ico/ico_loan07.png);
+        }
+        &.ico08{
+            background-image: url(../img/ico/ico_loan08.png);
+        }
+
+    }
+    .loan-text{
+        float:left;
+        margin-left: 16px;
     }
 }
