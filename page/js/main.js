@@ -10,7 +10,14 @@ import "../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js";
 //
 
 // Create an example popover
-document.querySelectorAll('[data-bs-toggle="popover"]')
-  .forEach(popover => {
-    new bootstrap.Popover(popover)
-  })
+// document.querySelectorAll('[data-bs-toggle="popover"]')
+//   .forEach(popover => {
+//     new bootstrap.Popover(popover)
+//   })
+
+var popover = new bootstrap.Popover(document.querySelector('.HCAU-popover'), {
+	container: 'body',
+	// delay: {show:1100, hide:100},
+	template: '<div class="popover" role="tooltip"><div class="popover-arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+
+})
