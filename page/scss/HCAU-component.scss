@@ -103,7 +103,7 @@ $black : #000;
                 display: inline-block;
                 width: 18px;
                 height: 18px;
-                background: url(/static/img/ico/ico_notice.png) no-repeat 0 0;
+                background: url(../img/ico/ico_notice.png) no-repeat 0 0;
                 vertical-align: text-top;
                 margin-right: 2px;
             }
@@ -273,7 +273,7 @@ $black : #000;
         display: inline-block;
         width: 20px;
         height: 20px;
-        background: url(/static/img/ico/ico_print.png) no-repeat 0 0;
+        background: url(../img/ico/ico_print.png) no-repeat 0 0;
         vertical-align: bottom;
         text-indent: -9999px;
         // margin-left: 4px;
@@ -380,6 +380,9 @@ $black : #000;
     border: 1px solid $gray02;
     border-radius: 4px;
     background: $white;
+    &.edge{
+        border-radius: 0;
+    }
 }
 
 .bg-box{
@@ -430,19 +433,19 @@ $black : #000;
     }
 }
 .HCAU-form.form-check-input[type=checkbox]{
-    background-image: url(/static/img/bg/bg_input_check.svg);
+    background-image: url(../img/bg/bg_input_check.svg);
     background-size: 14px 14px;
     &:checked{
         background-color: $primary;
         border-color: $primary;
-        background-image: url(/static/img/bg/bg_input_check_on.svg);
+        background-image: url(../img/bg/bg_input_check_on.svg);
         background-size: 14px 14px;
     }
 }
 .HCAU-form.form-check-input:checked[type=radio]{
     background-color: $white;
     border-color: $primary;
-    background-image: url(/static/img/bg/bg_input_radio_on.svg);
+    background-image: url(../img/bg/bg_input_radio_on.svg);
     background-size: 14px 14px;
 }
 
@@ -518,7 +521,7 @@ $black : #000;
                     padding: 0;
                     width: 24px;
                     height: 24px;
-                    background-image: url(/static/img/ico/ico_modal_close.png);
+                    background-image: url(../img/ico/ico_modal_close.png);
                 }
             }
             .modal-body{
@@ -589,7 +592,7 @@ $black : #000;
         display: block;
         width: 100%;
         height: 100px;
-        background: url(/static/img/ico/ico_no_matches_hd01.png) no-repeat 50% 0;
+        background: url(../img/ico/ico_no_matches_hd01.png) no-repeat 50% 0;
         margin-bottom: 16px;
     }
 }
@@ -603,7 +606,7 @@ $black : #000;
         display: block;
         width: 100%;
         height: 48px;
-        background: url(/static/img/ico/ico_no_matches_hd02.png) no-repeat 50% 0;
+        background: url(../img/ico/ico_no_matches_hd02.png) no-repeat 50% 0;
         margin-bottom: 8px;
     }
 }
@@ -612,7 +615,7 @@ $black : #000;
     display: inline-block;
     width: 24px;
     height: 24px;
-    background: url(/static/img/ico/ico_loan_btn.png) no-repeat 0 0;
+    background: url(../img/ico/ico_loan_btn.png) no-repeat 0 0;
 }
 
 // loan-items
@@ -629,28 +632,28 @@ $black : #000;
         background-repeat: no-repeat;
         background-position: 0 0;
         &.ico01{
-            background-image: url(/static/img/ico/ico_loan01.png);
+            background-image: url(../img/ico/ico_loan01.png);
         }
         &.ico02{
-            background-image: url(/static/img/ico/ico_loan02.png);
+            background-image: url(../img/ico/ico_loan02.png);
         }
         &.ico03{
-            background-image: url(/static/img/ico/ico_loan03.png);
+            background-image: url(../img/ico/ico_loan03.png);
         }
         &.ico04{
-            background-image: url(/static/img/ico/ico_loan04.png);
+            background-image: url(../img/ico/ico_loan04.png);
         }
         &.ico05{
-            background-image: url(/static/img/ico/ico_loan05.png);
+            background-image: url(../img/ico/ico_loan05.png);
         }
         &.ico06{
-            background-image: url(/static/img/ico/ico_loan06.png);
+            background-image: url(../img/ico/ico_loan06.png);
         }
         &.ico07{
-            background-image: url(/static/img/ico/ico_loan07.png);
+            background-image: url(../img/ico/ico_loan07.png);
         }
         &.ico08{
-            background-image: url(/static/img/ico/ico_loan08.png);
+            background-image: url(../img/ico/ico_loan08.png);
         }
 
     }
@@ -664,3 +667,5 @@ $black : #000;
 .HCAU-payment-request{
     .border-box > .d-flex{height: 70px;}
 }
+//flex-fix
+.flex-fix{flex:1 1 0}
